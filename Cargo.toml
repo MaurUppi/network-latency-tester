@@ -1,6 +1,6 @@
 [package]
 name = "network-latency-tester"
-version = "0.1.0"
+version = "0.1.5"
 edition = "2021"
 authors = ["Network Latency Tester Team <maintainer@network-latency-tester.com>"]
 description = "A high-performance network latency testing tool with DNS configuration support and cross-platform compatibility"

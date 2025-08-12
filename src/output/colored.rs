@@ -237,7 +237,7 @@ impl ColoredFormatter {
         }
     }
 
-    /// Create a colored table with enhanced formatting
+    /// Create a colored table with enhanced formatting grouped by target URL
     fn create_colored_table(&self, results: &HashMap<String, TestResult>) -> Result<String> {
         if results.is_empty() {
             return Ok(self.colorize("No test results available.", self.color_scheme.muted).to_string());
@@ -245,62 +245,104 @@ impl ColoredFormatter {
 
         let mut output = String::new();
 
-        // Header
-        let header = format!("{:<40} {:>12} {:>12} {:>15} {:>12}",
-            "Configuration", "Success", "Avg Response", "Min/Max", "Level");
-        
-        writeln!(output, "{}", self.bold(&header))
-            .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
-        
-        writeln!(output, "{}", "─".repeat(95).color(self.color_scheme.border))
-            .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
+        // Group results by URL
+        let mut results_by_url: std::collections::HashMap<String, Vec<&TestResult>> = std::collections::HashMap::new();
+        for result in results.values() {
+            results_by_url.entry(result.url.clone()).or_insert_with(Vec::new).push(result);
+        }
 
-        // Sort results by performance (best first)
-        let mut sorted_results: Vec<_> = results.values().collect();
-        sorted_results.sort_by(|a, b| {
-            let a_time = a.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
-            let b_time = b.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
-            a_time.partial_cmp(&b_time).unwrap_or(std::cmp::Ordering::Equal)
-        });
+        // Sort URLs for consistent output
+        let mut sorted_urls: Vec<String> = results_by_url.keys().cloned().collect();
+        sorted_urls.sort();
 
-        // Data rows with colors
-        for (index, result) in sorted_results.iter().enumerate() {
-            let rank_icon = match index {
-                0 => "🥇",
-                1 => "🥈", 
-                2 => "🥉",
-                _ => "  ",
-            };
+        let mut overall_rank = 0;
 
-            let config_name = format!("{} {}", rank_icon, result.config_name);
-            let config_display = if config_name.len() > 38 {
-                format!("{}...", &config_name[..35])
-            } else {
-                config_name
-            };
+        for (url_index, url) in sorted_urls.iter().enumerate() {
+            // Add URL section header for multiple URLs
+            if results_by_url.len() > 1 {
+                if url_index > 0 {
+                    writeln!(output)
+                        .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
+                }
+                let url_display = if url.len() > 80 {
+                    format!("{}...", &url[..77])
+                } else {
+                    url.clone()
+                };
+                writeln!(output, "🎯 Target: {}", self.bold(&url_display).color(self.color_scheme.info))
+                    .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
+                writeln!(output, "{}", "─".repeat(95).color(self.color_scheme.border))
+                    .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
+            }
 
-            let success_rate = result.success_rate();
-            let success_display = format!("{} {}", 
-                self.format_percentage_colored(success_rate),
-                self.create_performance_bar(success_rate, 8));
-
-            let (avg_response, min_max, performance_level) = if let Some(ref stats) = result.statistics {
-                let avg_colored = self.format_duration_colored(stats.total_avg_ms);
-                let min_max = format!("{}/{}", 
-                    self.format_duration(stats.total_min_ms), 
-                    self.format_duration(stats.total_max_ms));
-                let perf_level = PerformanceLevel::from_response_time(stats.total_avg_ms);
-                let perf_display = format!("{} {}", perf_level.symbol(), perf_level.description());
+            // Header for each section (or just once if single URL)
+            if url_index == 0 || results_by_url.len() > 1 {
+                let header = format!("{:<40} {:>12} {:>12} {:>15} {:>12}",
+                    "Configuration", "Success", "Avg Response", "Min/Max", "Level");
                 
-                (avg_colored.to_string(), min_max, 
-                 self.colorize(&perf_display, perf_level.color()).to_string())
-            } else {
-                (self.dimmed("N/A").to_string(), self.dimmed("N/A").to_string(), self.dimmed("Unknown").to_string())
-            };
+                writeln!(output, "{}", self.bold(&header))
+                    .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
+                
+                writeln!(output, "{}", "─".repeat(95).color(self.color_scheme.border))
+                    .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
+            }
 
-            writeln!(output, "{:<40} {:>20} {:>12} {:>15} {:>20}",
-                config_display, success_display, avg_response, min_max, performance_level)
-                .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
+            // Sort this URL's results by performance (best first)
+            let mut url_results = results_by_url[url].clone();
+            url_results.sort_by(|a, b| {
+                let a_time = a.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
+                let b_time = b.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
+                a_time.partial_cmp(&b_time).unwrap_or(std::cmp::Ordering::Equal)
+            });
+
+            // Data rows with colors
+            for (index, result) in url_results.iter().enumerate() {
+                overall_rank += 1;
+                let rank_icon = match overall_rank {
+                    1 => "🥇",
+                    2 => "🥈", 
+                    3 => "🥉",
+                    _ => if results_by_url.len() > 1 {
+                        // For multi-URL, show local ranking within the URL
+                        match index {
+                            0 => "🏆", // Best for this URL
+                            _ => "  ",
+                        }
+                    } else {
+                        "  "
+                    }
+                };
+
+                let config_name = format!("{} {}", rank_icon, result.config_name);
+                let config_display = if config_name.len() > 38 {
+                    format!("{}...", &config_name[..35])
+                } else {
+                    config_name
+                };
+
+                let success_rate = result.success_rate();
+                let success_display = format!("{} {}", 
+                    self.format_percentage_colored(success_rate),
+                    self.create_performance_bar(success_rate, 8));
+
+                let (avg_response, min_max, performance_level) = if let Some(ref stats) = result.statistics {
+                    let avg_colored = self.format_duration_colored(stats.total_avg_ms);
+                    let min_max = format!("{}/{}", 
+                        self.format_duration(stats.total_min_ms), 
+                        self.format_duration(stats.total_max_ms));
+                    let perf_level = PerformanceLevel::from_response_time(stats.total_avg_ms);
+                    let perf_display = format!("{} {}", perf_level.symbol(), perf_level.description());
+                    
+                    (avg_colored.to_string(), min_max, 
+                     self.colorize(&perf_display, perf_level.color()).to_string())
+                } else {
+                    (self.dimmed("N/A").to_string(), self.dimmed("N/A").to_string(), self.dimmed("Unknown").to_string())
+                };
+
+                writeln!(output, "{:<40} {:>20} {:>12} {:>15} {:>20}",
+                    config_display, success_display, avg_response, min_max, performance_level)
+                    .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
+            }
         }
 
         Ok(output)
