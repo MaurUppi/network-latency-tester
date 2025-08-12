@@ -57,16 +57,16 @@ jobs:
           - **macOS Intel**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-darwin-x64.tar.gz\`  
           - **macOS Apple Silicon**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-darwin-arm64.tar.gz\`
           - **Linux x64 (Ubuntu/Debian)**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-linux-x64-ubuntu.tar.gz\`
-          - **Linux ARM64 (Ubuntu/Debian)**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-linux-arm64-ubuntu.tar.gz\`
-          - **Linux x64 (Alpine/musl)**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-linux-x64-musl.tar.gz\`
           
           ### Installation
           1. Download the appropriate archive for your platform
           2. Extract the archive
           3. Run the \`network-latency-tester\` binary
           
-          ### FreeBSD Support
-          FreeBSD users can build from source:
+          ### Additional Platforms
+          Users on other platforms can build from source:
+          
+          **FreeBSD, Alpine Linux (musl), Linux ARM64:**
           \`\`\`bash
           git clone https://github.com/MaurUppi/network-latency-tester
           cd network-latency-tester
@@ -105,16 +105,6 @@ jobs:
             archive_name: linux-x64-ubuntu
             cross: false
             description: "Ubuntu/Debian x64"
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            archive_name: linux-arm64-ubuntu
-            cross: true
-            description: "Ubuntu/Debian ARM64"
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            archive_name: linux-x64-musl
-            cross: true
-            description: "Alpine Linux x64 (musl)"
 
     steps:
       - name: Checkout
@@ -135,14 +125,6 @@ jobs:
               ;;
             aarch64-apple-darwin)
               # Handled by Rust toolchain on macOS
-              ;;
-            aarch64-unknown-linux-gnu)
-              sudo apt-get update
-              sudo apt-get install -y gcc-aarch64-linux-gnu
-              ;;
-            x86_64-unknown-linux-musl)
-              sudo apt-get update
-              sudo apt-get install -y musl-tools
               ;;
           esac
 
