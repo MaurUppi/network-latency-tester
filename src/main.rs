@@ -25,7 +25,7 @@ async fn main() {
     // Set up better panic handling
     std::panic::set_hook(Box::new(|panic_info| {
         eprintln!("Application panic: {}", panic_info);
-        eprintln!("Please report this issue at: https://github.com/your-repo/network-latency-tester/issues");
+        eprintln!("Please report this issue at: https://github.com/MaurUppi/network-latency-tester/issues");
         process::exit(1);
     }));
 

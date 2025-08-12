@@ -434,7 +434,10 @@ impl OptimizedExecutor {
         // In a more sophisticated implementation, we would measure each phase separately
         let dns_duration = Duration::from_millis(10); // Estimated
         let connect_duration = Duration::from_millis(50); // Estimated
-        let first_byte_duration = total_duration - dns_duration - connect_duration;
+        let first_byte_duration = total_duration
+            .checked_sub(dns_duration)
+            .and_then(|d| d.checked_sub(connect_duration))
+            .unwrap_or(Duration::from_millis(1)); // Default to 1ms if underflow
         
         if response.status().is_success() {
             Ok(TimingMetrics::success(

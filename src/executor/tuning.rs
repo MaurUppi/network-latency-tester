@@ -599,7 +599,7 @@ impl PerformanceMonitor {
         }
         
         let window_duration = Duration::from_secs(30);
-        let cutoff_time = Instant::now() - window_duration;
+        let cutoff_time = Instant::now().checked_sub(window_duration).unwrap_or_else(Instant::now);
         
         // Filter to recent samples within the window
         let recent: Vec<&PerformanceSample> = self.recent_samples
