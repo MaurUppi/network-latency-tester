@@ -1,32 +1,34 @@
-# Network Latency Tester
+# 网络延迟测试工具
 
-A high-performance network latency testing tool built in Rust that measures connectivity to configurable target URLs using various DNS configurations including custom DNS servers and DNS-over-HTTPS providers.
+**[English](README_EN.md) | 中文**
 
-## Features
+这个项目是采用 Rust 构建的高性能网络延迟测试工具。可以指定 DNS/DoH 提供商解析目标 URL 地址，测试网络连接性与延迟情况。
 
-- **Multiple DNS Configurations**: Test with system DNS, custom DNS servers, or DNS-over-HTTPS providers
-- **Comprehensive Statistics**: Detailed timing metrics including DNS resolution, connection, and total response times
-- **Network Diagnostics**: Built-in connectivity and health checks before running tests
-- **Colored Output**: Rich terminal output with color-coded performance indicators
-- **Flexible Configuration**: Environment variables, command-line arguments, and .env file support
-- **Concurrent Testing**: Parallel execution across multiple DNS configurations
-- **Cross-platform**: Works on Linux, macOS, and Windows
-- **Multi-URL Testing**: Test multiple target URLs simultaneously with clear result grouping
-- **Enhanced Performance Analysis**: Realistic timing breakdowns with accurate fast/slow classification
+## 功能特性
 
-## What's New in v0.1.6
+- **多重 DNS 配置**：使用系统 DNS、自定义 DNS 服务器或 DNS-over-HTTPS 提供商进行测试
+- **综合统计**：详细的时序指标，包括 DNS 解析、连接和总响应时间
+- **网络诊断**：运行测试前内置连接性和健康检查
+- **彩色输出**：丰富的终端输出，带有颜色编码的性能指示器
+- **灵活配置**：支持环境变量、命令行参数和 .env 文件
+- **并发测试**：跨多个 DNS 配置并行执行
+- **跨平台**：支持 Linux、macOS 和 Windows
+- **多 URL 测试**：同时测试多个目标 URL，结果清晰分组
+- **增强的性能分析**：真实时序分解，准确的快/慢分类
 
-- **Improved DNS Grouping**: Results now organized by DNS type (System DNS → Custom DNS → DoH)
-- **Shorter Command**: Binary renamed to `nlt` for easier usage (was `network-latency-tester`)  
-- **Multi-URL Support**: Test multiple targets simultaneously with grouped results
-- **Always-Visible URLs**: Target URLs now always shown for better clarity
-- **Real Timing Data**: Fixed timing measurements that previously showed "N/A" values
-- **Accurate Recommendations**: DNS configuration names instead of confusing "test_X" references
-- **Better Performance Analysis**: Realistic classifications instead of incorrect "slow" messages
+## v0.1.6 新增功能
 
-## Installation
+- **改进的 DNS 分组**：结果现在按 DNS 类型组织（系统 DNS → 自定义 DNS → DoH）
+- **更短的命令**：二进制文件重命名为 `nlt`，更易使用（原为 `network-latency-tester`）
+- **多 URL 支持**：同时测试多个目标，结果分组显示
+- **始终可见的 URL**：目标 URL 始终显示，提高清晰度
+- **真实时序数据**：修复了之前显示 "N/A" 值的时序测量问题
+- **准确的建议**：使用 DNS 配置名称而非混淆的 "test_X" 引用
+- **更好的性能分析**：真实分类而非错误的"慢"消息
 
-### From Source
+## 安装
+
+### 从源码安装
 
 ```bash
 git clone https://github.com/MaurUppi/network-latency-tester
@@ -34,86 +36,81 @@ cd network-latency-tester
 cargo build --release
 ```
 
-The binary will be available at `target/release/nlt`.
+二进制文件将位于 `target/release/nlt`。
 
-### Using Cargo
 
-```bash
-cargo install network-latency-tester
-```
-
-## Quick Start
+## 快速开始
 
 ```bash
-# Test default target with system DNS
+# 使用系统 DNS 测试默认目标
 ./target/release/nlt
 
-# Test a specific URL
+# 测试特定 URL
 ./target/release/nlt --url https://example.com
 
-# Test with custom DNS servers and 10 iterations
+# 使用自定义 DNS 服务器测试 10 次迭代
 ./target/release/nlt --count 10 --timeout 5
 
-# Enable debug mode for detailed output
+# 启用调试模式获得详细输出
 ./target/release/nlt --debug --verbose
 
-# Test multiple URLs with different DNS configurations
+# 使用不同 DNS 配置测试多个 URL
 ./target/release/nlt --url https://httpbin.org,https://example.com --count 3
 ```
 
-## Configuration
+## 配置
 
-### Command Line Options
+### 命令行选项
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--url <URL>` | Target URL to test | `https://bing.com` |
-| `--count <N>` | Number of test iterations | `5` |
-| `--timeout <SECONDS>` | Request timeout in seconds | `10` |
-| `--no-color` | Disable colored output | `false` |
-| `--verbose` | Enable verbose output | `false` |
-| `--debug` | Enable debug output | `false` |
-| `--test-original` | Test original ctok.ai URL | `false` |
-| `--help` | Show help information | - |
+| 选项 | 描述 | 默认值 |
+|------|------|--------|
+| `--url <URL>` | 要测试的目标 URL | `https://bing.com` |
+| `--count <N>` | 测试迭代次数 | `5` |
+| `--timeout <SECONDS>` | 请求超时时间（秒） | `10` |
+| `--no-color` | 禁用彩色输出 | `false` |
+| `--verbose` | 启用详细输出 | `false` |
+| `--debug` | 启用调试输出 | `false` |
+| `--test-original` | 测试原始 ctok.ai URL | `false` |
+| `--help` | 显示帮助信息 | - |
 
-### Environment Variables
+### 环境变量
 
-Create a `.env` file in your project directory (see `.env.example` for reference):
+在项目目录中创建 `.env` 文件（参考 `.env.example`）：
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `TARGET_URLS` | Comma-separated list of URLs to test | `https://example.com,https://google.com` |
-| `DNS_SERVERS` | Comma-separated list of DNS server IPs | `8.8.8.8,1.1.1.1,208.67.222.222` |
-| `DOH_PROVIDERS` | Comma-separated list of DoH URLs | `https://cloudflare-dns.com/dns-query` |
-| `TEST_COUNT` | Number of test iterations (1-100) | `5` |
-| `TIMEOUT_SECONDS` | Request timeout in seconds (1-300) | `10` |
-| `ENABLE_COLOR` | Enable colored output | `true` |
+| 变量 | 描述 | 示例 |
+|------|------|------|
+| `TARGET_URLS` | 要测试的 URL 列表（逗号分隔） | `https://example.com,https://google.com` |
+| `DNS_SERVERS` | DNS 服务器 IP 列表（逗号分隔） | `8.8.8.8,1.1.1.1,208.67.222.222` |
+| `DOH_PROVIDERS` | DoH URL 列表（逗号分隔） | `https://cloudflare-dns.com/dns-query` |
+| `TEST_COUNT` | 测试迭代次数（1-100） | `5` |
+| `TIMEOUT_SECONDS` | 请求超时时间秒数（1-300） | `10` |
+| `ENABLE_COLOR` | 启用彩色输出 | `true` |
 
-### Configuration Priority
+### 配置优先级
 
-Configuration values are applied in the following order (highest to lowest priority):
+配置值按以下顺序应用（优先级从高到低）：
 
-1. Command-line arguments
-2. Environment variables
-3. `.env` file values
-4. Default values
+1. 命令行参数
+2. 环境变量
+3. `.env` 文件值
+4. 默认值
 
-## Usage Examples
+## 使用示例
 
-### Basic Usage
+### 基本用法
 
 ```bash
-# Test with default configuration
+# 使用默认配置测试
 ./nlt
 
-# Test specific URL with custom settings
+# 使用自定义设置测试特定 URL
 ./nlt --url https://api.github.com --count 10 --timeout 15
 ```
 
-### Advanced Configuration
+### 高级配置
 
 ```bash
-# Create .env file with custom configuration
+# 创建包含自定义配置的 .env 文件
 cat > .env << EOF
 TARGET_URLS=https://bing.com,https://api.openai.com,https://www.google.com
 DNS_SERVERS=8.8.8.8,1.1.1.1,208.67.222.222,9.9.9.9
@@ -123,84 +120,84 @@ TIMEOUT_SECONDS=5
 ENABLE_COLOR=true
 EOF
 
-# Run tests with environment configuration
+# 使用环境配置运行测试
 ./nlt --verbose
 ```
 
-### Performance Testing
+### 性能测试
 
 ```bash
-# High-frequency testing for performance analysis
+# 高频测试用于性能分析
 ./nlt --count 20 --timeout 3 --verbose
 
-# Compare different DNS providers
+# 比较不同 DNS 提供商
 ./nlt --debug --url https://example.com
 
-# Test multiple targets simultaneously
+# 同时测试多个目标
 ./nlt --url https://httpbin.org,https://example.com,https://google.com --count 5
 ```
 
-## Output Format
+## 输出格式
 
-The tool provides detailed output including:
+工具提供详细输出，包括：
 
-- **DNS Validation**: Checks DNS configuration validity before testing
-- **Test Progress**: Real-time progress updates during execution
-- **Performance Tables**: Color-coded response times and success rates
-- **Statistical Analysis**: Comprehensive statistics including percentiles and confidence intervals
-- **Network Diagnostics**: System health and connectivity assessments
-- **Recommendations**: Best performing DNS configurations
+- **DNS 验证**：测试前检查 DNS 配置有效性
+- **测试进度**：执行期间的实时进度更新
+- **性能表格**：颜色编码的响应时间和成功率
+- **统计分析**：包括百分位数和置信区间的综合统计
+- **网络诊断**：系统健康和连接性评估
+- **建议**：性能最佳的 DNS 配置
 
-### Sample Output
+### 输出示例
 
 ```
 ═════════════════════════════════════
-  🎯 Network Latency Test Results  
+  🎯 网络延迟测试结果  
 ═════════════════════════════════════
 
-📊 Execution Summary
-⏱️  Duration:     1m0.0s
-🧪 Total Tests:  10
-✅ Successful:   10 (100.0%)
+📊 执行摘要
+⏱️  持续时间:     1m0.0s
+🧪 总测试数:  10
+✅ 成功:   10 (100.0%)
 
-🚀 Performance Results
+🚀 性能结果
 
-🎯 Target: https://httpbin.org
+🎯 目标: https://httpbin.org
 ───────────────────────────────────────────────────────────────────────────────────────────────
-Configuration                                 Success Avg Response         Min/Max        Level
+配置                                        成功率 平均响应时间         最小/最大        等级
 ───────────────────────────────────────────────────────────────────────────────────────────────
-🥇 System DNS                                100.0% [████████] 68ms       65ms/71ms      ⚡ Good
-🥈 Custom DNS (8.8.8.8)                      100.0% [████████] 52ms       49ms/55ms 🚀 Excellent  
-🥉 Custom DNS (1.1.1.1)                      100.0% [████████] 58ms       55ms/61ms 🚀 Excellent
-   DoH (https://cloudflare-dns.com/...)       100.0% [████████] 45ms       42ms/48ms 🚀 Excellent
+🥇 系统 DNS                                100.0% [████████] 68ms       65ms/71ms      ⚡ 良好
+🥈 自定义 DNS (8.8.8.8)                      100.0% [████████] 52ms       49ms/55ms 🚀 优秀  
+🥉 自定义 DNS (1.1.1.1)                      100.0% [████████] 58ms       55ms/61ms 🚀 优秀
+   DoH (https://cloudflare-dns.com/...)       100.0% [████████] 45ms       42ms/48ms 🚀 优秀
 
-🎯 Target: https://example.com
+🎯 目标: https://example.com
 ───────────────────────────────────────────────────────────────────────────────────────────────
-Configuration                                 Success Avg Response         Min/Max        Level
+配置                                        成功率 平均响应时间         最小/最大        等级
 ───────────────────────────────────────────────────────────────────────────────────────────────
-🏆 System DNS                                100.0% [████████] 38ms       35ms/41ms 🚀 Excellent
-   Custom DNS (8.8.8.8)                      100.0% [████████] 43ms       40ms/46ms 🚀 Excellent
-   Custom DNS (1.1.1.1)                      100.0% [████████] 49ms       46ms/52ms 🚀 Excellent
-   DoH (https://cloudflare-dns.com/...)       100.0% [████████] 67ms       64ms/70ms      ⚡ Good
+🏆 系统 DNS                                100.0% [████████] 38ms       35ms/41ms 🚀 优秀
+   自定义 DNS (8.8.8.8)                      100.0% [████████] 43ms       40ms/46ms 🚀 优秀
+   自定义 DNS (1.1.1.1)                      100.0% [████████] 49ms       46ms/52ms 🚀 优秀
+   DoH (https://cloudflare-dns.com/...)       100.0% [████████] 67ms       64ms/70ms      ⚡ 良好
 
-💡 Recommendations
-🎯 Use System DNS for optimal performance
-✨ Network performance looks good!
+💡 建议
+🎯 使用系统 DNS 获得最佳性能
+✨ 网络性能看起来不错！
 ```
 
-## DNS Configuration
+## DNS 配置
 
-### System DNS
+### 系统 DNS
 
-Uses your system's default DNS resolver configuration.
+使用系统的默认 DNS 解析器配置。
 
 ```bash
-./nlt  # Uses system DNS
+./nlt  # 使用系统 DNS
 ```
 
-### Custom DNS Servers
+### 自定义 DNS 服务器
 
-Specify custom DNS servers via environment variables:
+通过环境变量指定自定义 DNS 服务器：
 
 ```bash
 export DNS_SERVERS="8.8.8.8,1.1.1.1,208.67.222.222"
@@ -209,142 +206,142 @@ export DNS_SERVERS="8.8.8.8,1.1.1.1,208.67.222.222"
 
 ### DNS-over-HTTPS (DoH)
 
-Configure DoH providers for enhanced privacy:
+配置 DoH 提供商以增强隐私：
 
 ```bash
 export DOH_PROVIDERS="https://cloudflare-dns.com/dns-query,https://dns.google/dns-query"
 ./nlt
 ```
 
-### Popular DNS Providers
+### 常用 DNS 提供商
 
-| Provider | IP Address | DoH URL |
-|----------|------------|---------|
+| 提供商 | IP 地址 | DoH URL |
+|--------|---------|---------|
 | Google | `8.8.8.8`, `8.8.4.4` | `https://dns.google/dns-query` |
 | Cloudflare | `1.1.1.1`, `1.0.0.1` | `https://cloudflare-dns.com/dns-query` |
 | Quad9 | `9.9.9.9`, `149.112.112.112` | `https://dns.quad9.net/dns-query` |
 | OpenDNS | `208.67.222.222`, `208.67.220.220` | - |
-| Alibaba | `223.5.5.5`, `223.6.6.6` | - |
+| 阿里巴巴 | `223.5.5.5`, `223.6.6.6` | - |
 
-## Error Handling
+## 错误处理
 
-The tool provides helpful error messages and suggestions:
+工具提供有用的错误消息和建议：
 
-### Configuration Errors
-- Check .env file format
-- Verify URL formats (must start with http:// or https://)
-- Ensure DNS server IPs are valid
-- DoH URLs must use HTTPS
+### 配置错误
+- 检查 .env 文件格式
+- 验证 URL 格式（必须以 http:// 或 https:// 开头）
+- 确保 DNS 服务器 IP 有效
+- DoH URL 必须使用 HTTPS
 
-### Network Errors
-- Check internet connection
-- Try different DNS servers
-- Verify firewall settings
-- Test with a different target URL
+### 网络错误（必然如下有一个有问题）
+- 检查互联网连接
+- 尝试不同的 DNS 服务器
+- 验证防火墙设置
+- 使用不同的目标 URL 进行测试
 
-### DNS Resolution Errors
-- Try using public DNS servers (8.8.8.8, 1.1.1.1)
-- Check if the domain exists
-- Test DNS resolution manually with `nslookup` or `dig`
+### DNS 解析错误
+- 尝试使用公共 DNS 服务器（8.8.8.8, 1.1.1.1）
+- 检查域名是否存在
+- 使用 `nslookup` 或 `dig @1.1.1.1 apple.com` 手动测试 DNS 解析
 
-## Development
+## 开发
 
-### Prerequisites
+### 先决条件
 
-- Rust 1.70+ (for async/await support)
-- Cargo package manager
+- Rust 1.70+（用于 async/await 支持）
+- Cargo 包管理器
 
-### Building
+### 构建
 
 ```bash
-# Debug build
+# 调试构建
 cargo build
 
-# Release build (optimized)
+# 发布构建（优化）
 cargo build --release
 
-# Run tests
+# 运行测试
 cargo test
 
-# Run with logging
+# 带日志运行
 RUST_LOG=debug cargo run -- --debug
 ```
 
-### Project Structure
+### 项目结构
 
 ```
 src/
-├── main.rs              # CLI application entry point
-├── lib.rs               # Library exports and constants
-├── cli.rs               # Command-line interface definition
-├── app.rs               # Application core logic
-├── error.rs             # Error handling system
-├── types.rs             # Core type definitions
-├── models/              # Data models and structures
+├── main.rs              # CLI 应用程序入口点
+├── lib.rs               # 库导出和常量
+├── cli.rs               # 命令行界面定义
+├── app.rs               # 应用程序核心逻辑
+├── error.rs             # 错误处理系统
+├── types.rs             # 核心类型定义
+├── models/              # 数据模型和结构
 │   ├── mod.rs
-│   ├── config.rs        # Configuration models
-│   └── metrics.rs       # Timing and measurement models
-├── config/              # Configuration management
+│   ├── config.rs        # 配置模型
+│   └── metrics.rs       # 计时和测量模型
+├── config/              # 配置管理
 │   ├── mod.rs
-│   ├── parser.rs        # Configuration parsing and merging
-│   └── validation.rs    # Configuration validation
-├── dns.rs               # DNS configuration and resolution
-├── client.rs            # HTTP client with timing measurements
-├── executor.rs          # Test execution engine
-├── stats.rs             # Statistical analysis and calculations
-├── diagnostics.rs       # Network diagnostics and health checks
-└── output/              # Output formatting and display
+│   ├── parser.rs        # 配置解析和合并
+│   └── validation.rs    # 配置验证
+├── dns.rs               # DNS 配置和解析
+├── client.rs            # 带时序测量的 HTTP 客户端
+├── executor.rs          # 测试执行引擎
+├── stats.rs             # 统计分析和计算
+├── diagnostics.rs       # 网络诊断和健康检查
+└── output/              # 输出格式和显示
     ├── mod.rs
-    ├── formatter.rs     # Plain text formatting
-    └── colored.rs       # Color-coded formatting
+    ├── formatter.rs     # 纯文本格式
+    └── colored.rs       # 颜色编码格式
 ```
 
-### Running Tests
+### 运行测试
 
 ```bash
-# Run all tests
+# 运行所有测试
 cargo test
 
-# Run tests with output
+# 运行测试并显示输出
 cargo test -- --nocapture
 
-# Run specific test module
+# 运行特定测试模块
 cargo test config::parser::tests
 
-# Run integration tests
+# 运行集成测试
 cargo test --test integration_tests
 ```
 
-### Contributing
+### 贡献
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature-name`)
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass (`cargo test`)
-6. Run formatting (`cargo fmt`) and linting (`cargo clippy`)
-7. Create a pull request
+1. Fork 仓库
+2. 创建功能分支 (`git checkout -b feature-name`)
+3. 进行更改
+4. 为新功能添加测试
+5. 确保所有测试通过 (`cargo test`)
+6. 运行格式化 (`cargo fmt`) 和检查 (`cargo clippy`)
+7. 创建拉取请求
 
-## License
+## 许可证
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+本项目采用 MIT 许可证 - 详情请见 LICENSE 文件。
 
-## Acknowledgments
+## 致谢
 
-- Built with [Rust](https://www.rust-lang.org/) for performance and safety
-- Uses [tokio](https://tokio.rs/) for async networking
-- HTTP requests powered by [reqwest](https://github.com/seanmonstar/reqwest)
-- CLI interface built with [clap](https://github.com/clap-rs/clap)
-- Terminal colors via [colored](https://github.com/mackwic/colored)
+- 使用 [Rust](https://www.rust-lang.org/) 构建，注重性能和安全性
+- 使用 [tokio](https://tokio.rs/) 进行异步网络处理
+- HTTP 请求由 [reqwest](https://github.com/seanmonstar/reqwest) 提供支持
+- CLI 界面使用 [clap](https://github.com/clap-rs/clap) 构建
+- 终端颜色通过 [colored](https://github.com/mackwic/colored) 实现
 
-## Migration Notes
+## 迁移说明
 
-This Rust implementation provides feature parity with the original bash script `check_ctok-v2.sh` while offering:
+这个 Rust 实现与原始 bash 脚本 `check_ctok-v2.sh` 提供功能对等，同时提供：
 
-- **Better Performance**: Concurrent execution and optimized networking
-- **Enhanced Reliability**: Comprehensive error handling and validation
-- **Improved Usability**: Rich terminal output and configuration options
-- **Cross-platform Support**: Works consistently across different operating systems
-- **Maintainability**: Type-safe code with comprehensive test coverage
+- **更好的性能**：并发执行和优化的网络处理
+- **增强的可靠性**：全面的错误处理和验证
+- **改进的可用性**：丰富的终端输出和配置选项
+- **跨平台支持**：在不同操作系统上工作一致
+- **可维护性**：类型安全的代码和全面的测试覆盖
 
-The tool maintains backward compatibility with the original script's output format while providing additional features and improvements.
+该工具保持与原始脚本输出格式的向后兼容性，同时提供额外的功能和改进。
