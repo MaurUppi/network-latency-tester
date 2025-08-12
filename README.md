@@ -11,6 +11,17 @@ A high-performance network latency testing tool built in Rust that measures conn
 - **Flexible Configuration**: Environment variables, command-line arguments, and .env file support
 - **Concurrent Testing**: Parallel execution across multiple DNS configurations
 - **Cross-platform**: Works on Linux, macOS, and Windows
+- **Multi-URL Testing**: Test multiple target URLs simultaneously with clear result grouping
+- **Enhanced Performance Analysis**: Realistic timing breakdowns with accurate fast/slow classification
+
+## What's New in v0.1.5
+
+- **Shorter Command**: Binary renamed to `nlt` for easier usage (was `network-latency-tester`)  
+- **Multi-URL Support**: Test multiple targets simultaneously with grouped results
+- **Always-Visible URLs**: Target URLs now always shown for better clarity
+- **Real Timing Data**: Fixed timing measurements that previously showed "N/A" values
+- **Accurate Recommendations**: DNS configuration names instead of confusing "test_X" references
+- **Better Performance Analysis**: Realistic classifications instead of incorrect "slow" messages
 
 ## Installation
 
@@ -22,7 +33,7 @@ cd network-latency-tester
 cargo build --release
 ```
 
-The binary will be available at `target/release/network-latency-tester`.
+The binary will be available at `target/release/nlt`.
 
 ### Using Cargo
 
@@ -34,19 +45,19 @@ cargo install network-latency-tester
 
 ```bash
 # Test default target with system DNS
-./target/release/network-latency-tester
+./target/release/nlt
 
 # Test a specific URL
-./target/release/network-latency-tester --url https://example.com
+./target/release/nlt --url https://example.com
 
 # Test with custom DNS servers and 10 iterations
-./target/release/network-latency-tester --count 10 --timeout 5
+./target/release/nlt --count 10 --timeout 5
 
 # Enable debug mode for detailed output
-./target/release/network-latency-tester --debug --verbose
+./target/release/nlt --debug --verbose
 
-# Test the original ctok.ai URL
-./target/release/network-latency-tester --test-original
+# Test multiple URLs with different DNS configurations
+./target/release/nlt --url https://httpbin.org,https://example.com --count 3
 ```
 
 ## Configuration
@@ -55,7 +66,7 @@ cargo install network-latency-tester
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--url <URL>` | Target URL to test | `https://as.ctok.ai` |
+| `--url <URL>` | Target URL to test | `https://bing.com` |
 | `--count <N>` | Number of test iterations | `5` |
 | `--timeout <SECONDS>` | Request timeout in seconds | `10` |
 | `--no-color` | Disable colored output | `false` |
@@ -92,10 +103,10 @@ Configuration values are applied in the following order (highest to lowest prior
 
 ```bash
 # Test with default configuration
-./network-latency-tester
+./nlt
 
 # Test specific URL with custom settings
-./network-latency-tester --url https://api.github.com --count 10 --timeout 15
+./nlt --url https://api.github.com --count 10 --timeout 15
 ```
 
 ### Advanced Configuration
@@ -103,7 +114,7 @@ Configuration values are applied in the following order (highest to lowest prior
 ```bash
 # Create .env file with custom configuration
 cat > .env << EOF
-TARGET_URLS=https://as.ctok.ai,https://api.openai.com,https://www.google.com
+TARGET_URLS=https://bing.com,https://api.openai.com,https://www.google.com
 DNS_SERVERS=8.8.8.8,1.1.1.1,208.67.222.222,9.9.9.9
 DOH_PROVIDERS=https://cloudflare-dns.com/dns-query,https://dns.google/dns-query
 TEST_COUNT=10
@@ -112,17 +123,20 @@ ENABLE_COLOR=true
 EOF
 
 # Run tests with environment configuration
-./network-latency-tester --verbose
+./nlt --verbose
 ```
 
 ### Performance Testing
 
 ```bash
 # High-frequency testing for performance analysis
-./network-latency-tester --count 20 --timeout 3 --verbose
+./nlt --count 20 --timeout 3 --verbose
 
 # Compare different DNS providers
-./network-latency-tester --debug --url https://example.com
+./nlt --debug --url https://example.com
+
+# Test multiple targets simultaneously
+./nlt --url https://httpbin.org,https://example.com,https://google.com --count 5
 ```
 
 ## Output Format
@@ -139,28 +153,36 @@ The tool provides detailed output including:
 ### Sample Output
 
 ```
-🔍 Validating DNS configurations...
-✓ DNS config System is valid
-✓ DNS config Custom (8.8.8.8) is valid
+═════════════════════════════════════
+  🎯 Network Latency Test Results  
+═════════════════════════════════════
 
-📊 Planning 15 total tests across 3 DNS configs and 1 URLs
-🧪 Testing https://example.com with System
+📊 Execution Summary
+⏱️  Duration:     1m0.0s
+🧪 Total Tests:  10
+✅ Successful:   10 (100.0%)
 
-📈 Generating statistical analysis...
-🔧 Running network diagnostics...
+🚀 Performance Results
 
-🎯 Execution Results Summary
-============================
+🎯 Target: https://httpbin.org
+───────────────────────────────────────────────────────────────────────────────────────────────
+Configuration                                 Success Avg Response         Min/Max        Level
+───────────────────────────────────────────────────────────────────────────────────────────────
+🥇 DoH (https://cloudflare-dns.com/...)       100.0% [████████] 45ms       42ms/48ms 🚀 Excellent
+🥈 Custom DNS (8.8.8.8)                      100.0% [████████] 52ms       49ms/55ms 🚀 Excellent  
+🥉 System DNS                                100.0% [████████] 68ms       65ms/71ms      ⚡ Good
 
-📊 Overall: 15/15 tests successful (100.0%) in 2.34s
-   • 0 failed, 0 timeout, 0 skipped
+🎯 Target: https://example.com
+───────────────────────────────────────────────────────────────────────────────────────────────
+Configuration                                 Success Avg Response         Min/Max        Level
+───────────────────────────────────────────────────────────────────────────────────────────────
+🏆 System DNS                                100.0% [████████] 38ms       35ms/41ms 🚀 Excellent
+   Custom DNS (8.8.8.8)                      100.0% [████████] 43ms       40ms/46ms 🚀 Excellent
+   DoH (https://cloudflare-dns.com/...)       100.0% [████████] 67ms       64ms/70ms      ⚡ Good
 
-🏆 Recommended configuration: System
-
-🚀 Top 3 Fastest Configurations:
-   1. System - 45.2ms avg (100.0% success)
-   2. Custom (8.8.8.8) - 52.1ms avg (100.0% success)
-   3. DoH (Cloudflare) - 78.9ms avg (100.0% success)
+💡 Recommendations
+🎯 Use System DNS for optimal performance
+✨ Network performance looks good!
 ```
 
 ## DNS Configuration
@@ -170,7 +192,7 @@ The tool provides detailed output including:
 Uses your system's default DNS resolver configuration.
 
 ```bash
-./network-latency-tester  # Uses system DNS
+./nlt  # Uses system DNS
 ```
 
 ### Custom DNS Servers
@@ -179,7 +201,7 @@ Specify custom DNS servers via environment variables:
 
 ```bash
 export DNS_SERVERS="8.8.8.8,1.1.1.1,208.67.222.222"
-./network-latency-tester
+./nlt
 ```
 
 ### DNS-over-HTTPS (DoH)
@@ -188,7 +210,7 @@ Configure DoH providers for enhanced privacy:
 
 ```bash
 export DOH_PROVIDERS="https://cloudflare-dns.com/dns-query,https://dns.google/dns-query"
-./network-latency-tester
+./nlt
 ```
 
 ### Popular DNS Providers
