@@ -1,0 +1,222 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: Release ${{ steps.get_version.outputs.version }}
+          body: |
+            ## Network Latency Tester ${{ steps.get_version.outputs.version }}
+            
+            ### Features
+            - High-performance network latency testing
+            - DNS configuration support
+            - Cross-platform compatibility
+            - Advanced statistics and reporting
+            
+            ### Downloads
+            Choose the appropriate binary for your platform:
+            - **Windows**: `network-latency-tester-${{ steps.get_version.outputs.version }}-windows-x64.zip`
+            - **macOS Intel**: `network-latency-tester-${{ steps.get_version.outputs.version }}-darwin-x64.tar.gz`  
+            - **macOS Apple Silicon**: `network-latency-tester-${{ steps.get_version.outputs.version }}-darwin-arm64.tar.gz`
+            - **Linux x64**: `network-latency-tester-${{ steps.get_version.outputs.version }}-linux-x64.tar.gz`
+            - **Linux ARM64**: `network-latency-tester-${{ steps.get_version.outputs.version }}-linux-arm64.tar.gz`
+            
+            ### Installation
+            1. Download the appropriate archive for your platform
+            2. Extract the archive
+            3. Run the `network-latency-tester` binary
+            
+            For more information, see the [README](https://github.com/MaurUppi/network-latency-tester/blob/main/README.md).
+          draft: false
+          prerelease: false
+
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            archive_name: windows-x64
+            cross: true
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            archive_name: darwin-x64
+            cross: false
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive_name: darwin-arm64
+            cross: true
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive_name: linux-x64
+            cross: false
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive_name: linux-arm64
+            cross: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compilation tools
+        if: matrix.cross
+        run: |
+          case "${{ matrix.target }}" in
+            x86_64-pc-windows-gnu)
+              sudo apt-get update
+              sudo apt-get install -y gcc-mingw-w64-x86-64
+              ;;
+            aarch64-apple-darwin)
+              # Handled by Rust toolchain on macOS
+              ;;
+            aarch64-unknown-linux-gnu)
+              sudo apt-get update
+              sudo apt-get install -y gcc-aarch64-linux-gnu
+              ;;
+          esac
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: cargo test --verbose
+
+      - name: Build release binary
+        run: |
+          if [ "${{ matrix.cross }}" = "true" ]; then
+            cargo build --release --target ${{ matrix.target }} --verbose
+          else
+            cargo build --release --target ${{ matrix.target }} --verbose
+          fi
+
+      - name: Create archive
+        id: create_archive
+        run: |
+          binary_name="network-latency-tester"
+          if [ "${{ matrix.target }}" = "x86_64-pc-windows-gnu" ]; then
+            binary_name="${binary_name}.exe"
+          fi
+          
+          # Create archive directory
+          archive_dir="network-latency-tester-${{ needs.create-release.outputs.version }}-${{ matrix.archive_name }}"
+          mkdir -p "$archive_dir"
+          
+          # Copy binary
+          cp "target/${{ matrix.target }}/release/$binary_name" "$archive_dir/"
+          
+          # Copy additional files
+          cp README.md "$archive_dir/"
+          cp LICENSE* "$archive_dir/" 2>/dev/null || true
+          
+          # Create archive
+          if [ "${{ matrix.target }}" = "x86_64-pc-windows-gnu" ]; then
+            archive_file="${archive_dir}.zip"
+            zip -r "$archive_file" "$archive_dir"
+          else
+            archive_file="${archive_dir}.tar.gz"
+            tar -czf "$archive_file" "$archive_dir"
+          fi
+          
+          echo "archive_file=$archive_file" >> $GITHUB_OUTPUT
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ steps.create_archive.outputs.archive_file }}
+          asset_name: ${{ steps.create_archive.outputs.archive_file }}
+          asset_content_type: application/octet-stream
+
+  publish-crates:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    needs: [create-release, build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-publish-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Publish to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          # Only publish if CARGO_REGISTRY_TOKEN is set
+          if [ -n "$CARGO_REGISTRY_TOKEN" ]; then
+            cargo publish --verbose
+          else
+            echo "CARGO_REGISTRY_TOKEN not set, skipping crates.io publish"
+          fi

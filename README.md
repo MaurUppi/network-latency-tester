@@ -17,7 +17,7 @@ A high-performance network latency testing tool built in Rust that measures conn
 ### From Source
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/MaurUppi/network-latency-tester
 cd network-latency-tester
 cargo build --release
 ```
