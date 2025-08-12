@@ -20,7 +20,6 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Checkout
@@ -37,37 +36,36 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.get_version.outputs.version }}
-          release_name: Release ${{ steps.get_version.outputs.version }}
-          body: |
-            ## Network Latency Tester ${{ steps.get_version.outputs.version }}
-            
-            ### Features
-            - High-performance network latency testing
-            - DNS configuration support
-            - Cross-platform compatibility
-            - Advanced statistics and reporting
-            
-            ### Downloads
-            Choose the appropriate binary for your platform:
-            - **Windows**: `network-latency-tester-${{ steps.get_version.outputs.version }}-windows-x64.zip`
-            - **macOS Intel**: `network-latency-tester-${{ steps.get_version.outputs.version }}-darwin-x64.tar.gz`  
-            - **macOS Apple Silicon**: `network-latency-tester-${{ steps.get_version.outputs.version }}-darwin-arm64.tar.gz`
-            - **Linux x64**: `network-latency-tester-${{ steps.get_version.outputs.version }}-linux-x64.tar.gz`
-            - **Linux ARM64**: `network-latency-tester-${{ steps.get_version.outputs.version }}-linux-arm64.tar.gz`
-            
-            ### Installation
-            1. Download the appropriate archive for your platform
-            2. Extract the archive
-            3. Run the `network-latency-tester` binary
-            
-            For more information, see the [README](https://github.com/MaurUppi/network-latency-tester/blob/main/README.md).
-          draft: false
-          prerelease: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          release_body="## Network Latency Tester ${{ steps.get_version.outputs.version }}
+          
+          ### Features
+          - High-performance network latency testing
+          - DNS configuration support
+          - Cross-platform compatibility
+          - Advanced statistics and reporting
+          
+          ### Downloads
+          Choose the appropriate binary for your platform:
+          - **Windows**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-windows-x64.zip\`
+          - **macOS Intel**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-darwin-x64.tar.gz\`  
+          - **macOS Apple Silicon**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-darwin-arm64.tar.gz\`
+          - **Linux x64**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-linux-x64.tar.gz\`
+          - **Linux ARM64**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-linux-arm64.tar.gz\`
+          
+          ### Installation
+          1. Download the appropriate archive for your platform
+          2. Extract the archive
+          3. Run the \`network-latency-tester\` binary
+          
+          For more information, see the [README](https://github.com/MaurUppi/network-latency-tester/blob/main/README.md)."
+          
+          gh release create ${{ steps.get_version.outputs.version }} \
+            --title "Release ${{ steps.get_version.outputs.version }}" \
+            --notes "$release_body" \
+            --latest
 
   build:
     name: Build ${{ matrix.target }}
@@ -181,14 +179,10 @@ jobs:
           echo "archive_file=$archive_file" >> $GITHUB_OUTPUT
 
       - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ steps.create_archive.outputs.archive_file }}
-          asset_name: ${{ steps.create_archive.outputs.archive_file }}
-          asset_content_type: application/octet-stream
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ needs.create-release.outputs.version }} ${{ steps.create_archive.outputs.archive_file }} --clobber
 
   publish-crates:
     name: Publish to crates.io
