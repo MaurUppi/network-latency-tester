@@ -14,8 +14,9 @@ A high-performance network latency testing tool built in Rust that measures conn
 - **Multi-URL Testing**: Test multiple target URLs simultaneously with clear result grouping
 - **Enhanced Performance Analysis**: Realistic timing breakdowns with accurate fast/slow classification
 
-## What's New in v0.1.5
+## What's New in v0.1.6
 
+- **Improved DNS Grouping**: Results now organized by DNS type (System DNS → Custom DNS → DoH)
 - **Shorter Command**: Binary renamed to `nlt` for easier usage (was `network-latency-tester`)  
 - **Multi-URL Support**: Test multiple targets simultaneously with grouped results
 - **Always-Visible URLs**: Target URLs now always shown for better clarity
@@ -168,9 +169,10 @@ The tool provides detailed output including:
 ───────────────────────────────────────────────────────────────────────────────────────────────
 Configuration                                 Success Avg Response         Min/Max        Level
 ───────────────────────────────────────────────────────────────────────────────────────────────
-🥇 DoH (https://cloudflare-dns.com/...)       100.0% [████████] 45ms       42ms/48ms 🚀 Excellent
+🥇 System DNS                                100.0% [████████] 68ms       65ms/71ms      ⚡ Good
 🥈 Custom DNS (8.8.8.8)                      100.0% [████████] 52ms       49ms/55ms 🚀 Excellent  
-🥉 System DNS                                100.0% [████████] 68ms       65ms/71ms      ⚡ Good
+🥉 Custom DNS (1.1.1.1)                      100.0% [████████] 58ms       55ms/61ms 🚀 Excellent
+   DoH (https://cloudflare-dns.com/...)       100.0% [████████] 45ms       42ms/48ms 🚀 Excellent
 
 🎯 Target: https://example.com
 ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -178,6 +180,7 @@ Configuration                                 Success Avg Response         Min/M
 ───────────────────────────────────────────────────────────────────────────────────────────────
 🏆 System DNS                                100.0% [████████] 38ms       35ms/41ms 🚀 Excellent
    Custom DNS (8.8.8.8)                      100.0% [████████] 43ms       40ms/46ms 🚀 Excellent
+   Custom DNS (1.1.1.1)                      100.0% [████████] 49ms       46ms/52ms 🚀 Excellent
    DoH (https://cloudflare-dns.com/...)       100.0% [████████] 67ms       64ms/70ms      ⚡ Good
 
 💡 Recommendations

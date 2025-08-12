@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.1.6] - 2025-08-12
+
+### Changed
+- **DNS Result Ordering**: Results now grouped by DNS type (System DNS → Custom DNS → DoH) instead of pure performance sorting
+- Within each DNS type group, configurations are still sorted by performance (best first)
+- Improves result readability and provides logical grouping for better DNS comparison
+
+### Technical Improvements
+- Enhanced sorting algorithm to prioritize DNS type categorization while maintaining performance insights
+- Updated sample outputs in documentation to reflect new ordering
+- Removed tracked .env file from repository (keeping .env.example for reference)
+
 ## [0.1.5] - 2025-01-08
 
 ### Added
