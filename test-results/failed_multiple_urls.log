@@ -1,6 +1,0 @@
-Test: multiple_urls
-Command: '/Users/ouzy/Documents/DevProjects/test/target/release/network-latency-tester' --url 'https://httpbin.org/delay/0.1' --url 'https://www.bing.com' --count 2 --timeout 15
-Exit Code: 127
-Duration: 0s
-Output:
-/Users/ouzy/Documents/DevProjects/test/scripts/test_runner.sh: line 131: timeout: command not found
