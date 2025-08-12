@@ -402,17 +402,20 @@ impl OptimizedExecutor {
         let total_count = config.test_count;
         
         // Create test result
-        let result = TestResult {
+        let mut result = TestResult {
             config_name: Self::dns_config_name(dns_config),
             dns_config: dns_config.clone(),
             url: url.to_string(),
             individual_results,
-            statistics: None, // Will be calculated later if needed
+            statistics: None,
             success_count,
             total_count,
             started_at: chrono::Utc::now() - chrono::Duration::from_std(start_time.elapsed()).unwrap_or_default(),
             completed_at: Some(chrono::Utc::now()),
         };
+        
+        // Calculate statistics from the measurements
+        result.calculate_statistics();
         
         Ok(result)
     }
@@ -420,7 +423,6 @@ impl OptimizedExecutor {
     /// Execute a single HTTP request with timing
     async fn execute_single_request(client: &Client, url: &str) -> Result<TimingMetrics> {
         let start_time = Instant::now();
-        let dns_start = Instant::now();
         
         // Make the HTTP request
         let response = client.get(url).send().await.map_err(|e| {
@@ -430,20 +432,46 @@ impl OptimizedExecutor {
         let total_duration = start_time.elapsed();
         let status_code = response.status().as_u16();
         
-        // For now, we'll estimate the timing components
-        // In a more sophisticated implementation, we would measure each phase separately
-        let dns_duration = Duration::from_millis(10); // Estimated
-        let connect_duration = Duration::from_millis(50); // Estimated
+        // Since reqwest doesn't provide detailed timing breakdown, we need to estimate
+        // the components based on realistic proportions of the total request time
+        let total_ms = total_duration.as_millis() as u64;
+        
+        // Realistic estimates based on typical request patterns:
+        // DNS: 5-15% of total time, minimum 1ms
+        // Connect: 10-30% of total time, minimum 5ms  
+        // TLS (for HTTPS): 15-40% of total time
+        // First byte: remaining time
+        
+        let is_https = url.starts_with("https://");
+        
+        let dns_duration = Duration::from_millis(
+            (total_ms / 10).max(1).min(50) // 10% of total, 1-50ms range
+        );
+        
+        let connect_duration = Duration::from_millis(
+            (total_ms / 5).max(5).min(200) // 20% of total, 5-200ms range  
+        );
+        
+        let tls_duration = if is_https {
+            Some(Duration::from_millis(
+                (total_ms / 4).max(10).min(300) // 25% of total for HTTPS, 10-300ms range
+            ))
+        } else {
+            None
+        };
+        
+        // Calculate first byte duration as remainder, ensuring it's positive
+        let overhead = dns_duration + connect_duration + tls_duration.unwrap_or(Duration::ZERO);
         let first_byte_duration = total_duration
-            .checked_sub(dns_duration)
-            .and_then(|d| d.checked_sub(connect_duration))
-            .unwrap_or(Duration::from_millis(1)); // Default to 1ms if underflow
+            .checked_sub(overhead)
+            .unwrap_or(Duration::from_millis(1))
+            .max(Duration::from_millis(1));
         
         if response.status().is_success() {
             Ok(TimingMetrics::success(
                 dns_duration,
                 connect_duration,
-                Some(Duration::from_millis(100)), // TLS handshake estimate
+                tls_duration,
                 first_byte_duration,
                 total_duration,
                 status_code,
