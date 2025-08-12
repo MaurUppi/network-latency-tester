@@ -61,7 +61,7 @@ jobs:
           ### Installation
           1. Download the appropriate archive for your platform
           2. Extract the archive
-          3. Run the \`network-latency-tester\` binary
+          3. Run the \`nlt\` binary (Network Latency Tester)
           
           ### Additional Platforms
           Users on other platforms can build from source:
@@ -159,7 +159,7 @@ jobs:
       - name: Create archive
         id: create_archive
         run: |
-          binary_name="network-latency-tester"
+          binary_name="nlt"
           if [ "${{ matrix.target }}" = "x86_64-pc-windows-gnu" ]; then
             binary_name="${binary_name}.exe"
           fi
