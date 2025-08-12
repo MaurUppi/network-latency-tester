@@ -1,0 +1,27 @@
+Test run started at 2025年 8月12日 星期二 09时29分04秒 CST
+[2025-08-12 09:29:04] Running test: basic_execution
+[2025-08-12 09:29:04] Command: '/Users/ouzy/Documents/DevProjects/test/target/release/network-latency-tester' --url 'https://httpbin.org/delay/0.1' --count 2 --timeout 10
+[2025-08-12 09:29:04] FAILED: basic_execution (exit code: 127, duration: 0s)
+[2025-08-12 09:29:04] Output: /Users/ouzy/Documents/DevProjects/test/scripts/test_runner.sh: line 131: timeout: command not found
+[2025-08-12 09:29:04] Running test: help_output
+[2025-08-12 09:29:04] Command: '/Users/ouzy/Documents/DevProjects/test/target/release/network-latency-tester' --help
+[2025-08-12 09:29:04] FAILED: help_output (exit code: 127, duration: 0s)
+[2025-08-12 09:29:04] Output: /Users/ouzy/Documents/DevProjects/test/scripts/test_runner.sh: line 131: timeout: command not found
+[2025-08-12 09:29:04] Running test: version_output
+[2025-08-12 09:29:04] Command: '/Users/ouzy/Documents/DevProjects/test/target/release/network-latency-tester' --version
+[2025-08-12 09:29:04] FAILED: version_output (exit code: 127, duration: 0s)
+[2025-08-12 09:29:04] Output: /Users/ouzy/Documents/DevProjects/test/scripts/test_runner.sh: line 131: timeout: command not found
+[2025-08-12 09:29:04] Running test: multiple_urls
+[2025-08-12 09:29:04] Command: '/Users/ouzy/Documents/DevProjects/test/target/release/network-latency-tester' --url 'https://httpbin.org/delay/0.1' --url 'https://www.bing.com' --count 2 --timeout 15
+[2025-08-12 09:29:04] FAILED: multiple_urls (exit code: 127, duration: 0s)
+[2025-08-12 09:29:04] Output: /Users/ouzy/Documents/DevProjects/test/scripts/test_runner.sh: line 131: timeout: command not found
+[2025-08-12 09:29:04] Running test: custom_dns
+[2025-08-12 09:29:04] Command: '/Users/ouzy/Documents/DevProjects/test/target/release/network-latency-tester' --url 'https://httpbin.org/delay/0.1' --dns '120.53.53.102' --count 2 --timeout 10
+[2025-08-12 09:29:04] FAILED: custom_dns (exit code: 127, duration: 0s)
+[2025-08-12 09:29:04] Output: /Users/ouzy/Documents/DevProjects/test/scripts/test_runner.sh: line 131: timeout: command not found
+[2025-08-12 09:29:04] Running test: multiple_dns
+[2025-08-12 09:29:04] Command: '/Users/ouzy/Documents/DevProjects/test/target/release/network-latency-tester' --url 'https://httpbin.org/delay/0.1' --dns '120.53.53.102' --dns '223.5.5.5' --count 2 --timeout 10
+[2025-08-12 09:29:04] FAILED: multiple_dns (exit code: 127, duration: 0s)
+[2025-08-12 09:29:04] Output: /Users/ouzy/Documents/DevProjects/test/scripts/test_runner.sh: line 131: timeout: command not found
+
+[2025-08-12 09:29:04] Test run completed at 2025年 8月12日 星期二 09时29分04秒 CST

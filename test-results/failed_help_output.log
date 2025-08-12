@@ -1,0 +1,6 @@
+Test: help_output
+Command: '/Users/ouzy/Documents/DevProjects/test/target/release/network-latency-tester' --help
+Exit Code: 127
+Duration: 0s
+Output:
+/Users/ouzy/Documents/DevProjects/test/scripts/test_runner.sh: line 131: timeout: command not found

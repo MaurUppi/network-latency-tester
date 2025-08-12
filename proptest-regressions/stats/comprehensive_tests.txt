@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc c677432355963c95d1988bce333230c1ccd07aacc6cde847e14d94cdae7b2b6a # shrinks to results = [TestResult { config_name: "aaa", dns_config: System, url: "https://a.com", individual_results: [TimingMetrics { dns_resolution: 1ms, tcp_connection: 1ms, tls_handshake: Some(0ns), first_byte: 50ms, total_duration: 100ms, http_status: 400, status: Success, timestamp: 2025-08-11T12:41:05.406120Z, error_message: None }], statistics: None, success_count: 0, total_count: 1, started_at: 2025-08-11T12:41:05.406120Z, completed_at: Some(2025-08-11T12:41:05.406120Z) }]
