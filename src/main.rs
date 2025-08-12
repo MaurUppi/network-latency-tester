@@ -230,7 +230,7 @@ fn create_execution_results(test_results: Vec<TestResult>, urls: &[String], dns_
         performance_summary: HashMap::new(),
     };
     
-    // Convert test results to HashMap
+    // Convert test results to HashMap using unique identifiers
     let mut results_map = HashMap::new();
     for (i, result) in test_results.into_iter().enumerate() {
         results_map.insert(format!("test_{}", i), result);

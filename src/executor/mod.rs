@@ -121,7 +121,7 @@ impl ExecutionResults {
                 let b_time = b.1.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
                 a_time.partial_cmp(&b_time).unwrap_or(std::cmp::Ordering::Equal)
             })
-            .map(|(name, _)| name.as_str())
+            .map(|(_, result)| result.config_name.as_str())
     }
     
     /// Get the worst performing configuration based on average response time

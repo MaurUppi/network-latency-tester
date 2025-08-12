@@ -258,25 +258,23 @@ impl ColoredFormatter {
         let mut overall_rank = 0;
 
         for (url_index, url) in sorted_urls.iter().enumerate() {
-            // Add URL section header for multiple URLs
-            if results_by_url.len() > 1 {
-                if url_index > 0 {
-                    writeln!(output)
-                        .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
-                }
-                let url_display = if url.len() > 80 {
-                    format!("{}...", &url[..77])
-                } else {
-                    url.clone()
-                };
-                writeln!(output, "🎯 Target: {}", self.bold(&url_display).color(self.color_scheme.info))
-                    .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
-                writeln!(output, "{}", "─".repeat(95).color(self.color_scheme.border))
+            // Always add URL section header (for both single and multiple URLs)
+            if url_index > 0 {
+                writeln!(output)
                     .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
             }
+            let url_display = if url.len() > 80 {
+                format!("{}...", &url[..77])
+            } else {
+                url.clone()
+            };
+            writeln!(output, "🎯 Target: {}", self.bold(&url_display).color(self.color_scheme.info))
+                .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
+            writeln!(output, "{}", "─".repeat(95).color(self.color_scheme.border))
+                .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
 
-            // Header for each section (or just once if single URL)
-            if url_index == 0 || results_by_url.len() > 1 {
+            // Header for each section
+            if true {
                 let header = format!("{:<40} {:>12} {:>12} {:>15} {:>12}",
                     "Configuration", "Success", "Avg Response", "Min/Max", "Level");
                 
@@ -552,23 +550,30 @@ impl OutputFormatter for ColoredFormatter {
                 .map_err(|e| AppError::io(format!("Failed to format recommendations: {}", e)))?;
         }
         
-        // Performance analysis
+        // Performance analysis based on actual test results
         let mut fast_configs = 0;
         let mut slow_configs = 0;
-        for perf in results.execution_summary.performance_summary.values() {
-            if perf.avg_response_time < 100.0 {
-                fast_configs += 1;
-            } else if perf.avg_response_time > 500.0 {
-                slow_configs += 1;
+        let mut total_configs = 0;
+        
+        for result in results.test_results.values() {
+            if let Some(ref stats) = result.statistics {
+                total_configs += 1;
+                if stats.total_avg_ms < 100.0 {
+                    fast_configs += 1;
+                } else if stats.total_avg_ms > 500.0 {
+                    slow_configs += 1;
+                }
             }
         }
         
-        if fast_configs == 0 {
-            writeln!(output, "🐌 All configurations slow - {}", 
-                self.colorize("check network conditions", self.color_scheme.error))
+        if total_configs == 0 {
+            // No valid statistics available
+        } else if fast_configs == 0 && slow_configs > total_configs / 2 {
+            writeln!(output, "🐌 Most configurations are slow - {}", 
+                self.colorize("check network conditions", self.color_scheme.warning))
                 .map_err(|e| AppError::io(format!("Failed to format recommendations: {}", e)))?;
         } else if slow_configs > fast_configs {
-            writeln!(output, "🚀 Consider faster DNS providers for better performance")
+            writeln!(output, "⚡ Consider faster DNS providers for better performance")
                 .map_err(|e| AppError::io(format!("Failed to format recommendations: {}", e)))?;
         } else {
             writeln!(output, "✨ Network performance looks good!")
