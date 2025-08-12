@@ -76,50 +76,50 @@ fi
 # Get git information if in git repository
 GIT_INFO=""
 if [[ -d "$DIR/.git" ]] || git -C "$DIR" rev-parse --git-dir > /dev/null 2>&1; then
-    # Get repository name
+    # Get repository name (bright yellow for distinction)
     REPO_ROOT=$(git -C "$DIR" rev-parse --show-toplevel 2>/dev/null)
     if [[ -n "$REPO_ROOT" ]]; then
         REPO_NAME=$(basename "$REPO_ROOT")
-        GIT_REPO=" \033[36m⭐$REPO_NAME\033[0m"
+        GIT_REPO=" \033[93m⭐$REPO_NAME\033[0m"  # Bright yellow
     fi
     
-    # Get current branch
+    # Get current branch (bright colors for better visibility)
     BRANCH=$(git -C "$DIR" branch --show-current 2>/dev/null)
     if [[ -n "$BRANCH" ]]; then
         # Check for uncommitted changes
         if ! git -C "$DIR" diff-index --quiet HEAD -- 2>/dev/null; then
-            GIT_BRANCH=" \033[33m📍$BRANCH*\033[0m"  # Yellow with asterisk for changes
+            GIT_BRANCH=" \033[91m📍$BRANCH*\033[0m"  # Bright red with asterisk for changes
         else
-            GIT_BRANCH=" \033[32m📍$BRANCH\033[0m"   # Green for clean
+            GIT_BRANCH=" \033[92m📍$BRANCH\033[0m"   # Bright green for clean
         fi
     fi
     
-    # Get current commit ID (short)
+    # Get current commit ID (bright magenta for uniqueness)
     COMMIT_ID=$(git -C "$DIR" rev-parse --short HEAD 2>/dev/null)
     if [[ -n "$COMMIT_ID" ]]; then
-        GIT_COMMIT=" \033[35m🏷️$COMMIT_ID\033[0m"
+        GIT_COMMIT=" \033[95m🏷️$COMMIT_ID\033[0m"  # Bright magenta
     fi
     
     # Combine git information
     GIT_INFO="$GIT_REPO$GIT_BRANCH$GIT_COMMIT"
 fi
 
-# Truncate session ID to first 8 characters for display
+# Truncate session ID to first 8 characters for display (bright cyan for distinction)
 if [[ -n "$SESSION_ID" ]]; then
     SHORT_SESSION="${SESSION_ID:0:8}"
-    SESSION_INFO=" \033[36m🔗$SHORT_SESSION\033[0m"
+    SESSION_INFO=" \033[96m🔗$SHORT_SESSION\033[0m"  # Bright cyan
 fi
 
-# Smart model display formatting
+# Smart model display formatting with enhanced colors
 format_model_name() {
     local model="$1"
     local formatted_model=""
     local color_code=""
     
-    # Detect model family and apply appropriate colors/formatting
+    # Detect model family and apply bold colors for better visibility
     case "$model" in
         *"Sonnet"*|*"sonnet"*)
-            color_code="\033[35m"  # Purple for Sonnet
+            color_code="\033[1;35m"  # Bold Purple for Sonnet (premium model)
             # Extract version if present (e.g., "Sonnet 4" from "claude-sonnet-4-20250514")
             if [[ "$model" =~ [Ss]onnet.?([0-9]+(\.[0-9]+)?) ]]; then
                 formatted_model="Sonnet ${BASH_REMATCH[1]}"
@@ -128,7 +128,7 @@ format_model_name() {
             fi
             ;;
         *"Haiku"*|*"haiku"*)
-            color_code="\033[32m"  # Green for Haiku
+            color_code="\033[1;32m"  # Bold Green for Haiku (fast model)
             if [[ "$model" =~ [Hh]aiku.?([0-9]+(\.[0-9]+)?) ]]; then
                 formatted_model="Haiku ${BASH_REMATCH[1]}"
             else
@@ -136,7 +136,7 @@ format_model_name() {
             fi
             ;;
         *"Opus"*|*"opus"*)
-            color_code="\033[31m"  # Red for Opus
+            color_code="\033[1;31m"  # Bold Red for Opus (powerful model)
             if [[ "$model" =~ [Oo]pus.?([0-9]+(\.[0-9]+)?) ]]; then
                 formatted_model="Opus ${BASH_REMATCH[1]}"
             else
@@ -144,7 +144,7 @@ format_model_name() {
             fi
             ;;
         *"Claude"*|*"claude"*)
-            color_code="\033[36m"  # Cyan for generic Claude
+            color_code="\033[1;36m"  # Bold Cyan for generic Claude
             # Try to extract version number
             if [[ "$model" =~ [Cc]laude.?([0-9]+(\.[0-9]+)?) ]]; then
                 formatted_model="Claude ${BASH_REMATCH[1]}"
@@ -153,7 +153,7 @@ format_model_name() {
             fi
             ;;
         *)
-            color_code="\033[33m"  # Yellow for unknown/other models
+            color_code="\033[1;33m"  # Bold Yellow for unknown/other models
             # Truncate long model names but preserve important info
             if [[ ${#model} -gt 20 ]]; then
                 formatted_model="${model:0:17}..."
@@ -169,6 +169,6 @@ format_model_name() {
 # Format the model name intelligently
 FORMATTED_MODEL=$(format_model_name "$MODEL")
 
-# Build enhanced statusline with git details
+# Build enhanced statusline with distinctly colored elements
 # Format: [Model] 📁 directory ⭐repo 📍branch 🏷️commit 🔗session
-echo -e "[${FORMATTED_MODEL}] 📁 \033[34m$DIR_NAME\033[0m$GIT_INFO$SESSION_INFO"
+echo -e "[${FORMATTED_MODEL}] 📁 \033[94m$DIR_NAME\033[0m$GIT_INFO$SESSION_INFO"
