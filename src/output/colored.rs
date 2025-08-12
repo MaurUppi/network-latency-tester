@@ -285,12 +285,35 @@ impl ColoredFormatter {
                     .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
             }
 
-            // Sort this URL's results by performance (best first)
+            // Sort this URL's results by DNS type first, then by performance within each type
             let mut url_results = results_by_url[url].clone();
             url_results.sort_by(|a, b| {
-                let a_time = a.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
-                let b_time = b.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
-                a_time.partial_cmp(&b_time).unwrap_or(std::cmp::Ordering::Equal)
+                // Helper function to determine DNS type order
+                let get_dns_type_order = |config_name: &str| -> u8 {
+                    if config_name.contains("System DNS") {
+                        0 // System DNS first
+                    } else if config_name.contains("Custom DNS") {
+                        1 // Custom DNS second  
+                    } else if config_name.contains("DoH") {
+                        2 // DoH third
+                    } else {
+                        3 // Unknown last
+                    }
+                };
+                
+                let a_type = get_dns_type_order(&a.config_name);
+                let b_type = get_dns_type_order(&b.config_name);
+                
+                // First sort by DNS type
+                match a_type.cmp(&b_type) {
+                    std::cmp::Ordering::Equal => {
+                        // If same DNS type, sort by performance (best first)
+                        let a_time = a.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
+                        let b_time = b.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
+                        a_time.partial_cmp(&b_time).unwrap_or(std::cmp::Ordering::Equal)
+                    }
+                    other => other
+                }
             });
 
             // Data rows with colors
