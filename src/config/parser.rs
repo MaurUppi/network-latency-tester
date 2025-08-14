@@ -55,32 +55,21 @@ impl ConfigParser {
             config.timeout_seconds = self.cli.timeout;
         }
 
-        // Override color setting if --no-color is specified
-        if self.cli.no_color {
-            config.enable_color = false;
-        }
+        // Override color setting based on CLI flags
+        config.enable_color = self.cli.use_colors();
 
         // Set verbose and debug flags (these are CLI-only)
         config.verbose = self.cli.verbose;
         config.debug = self.cli.debug;
 
-        // Override target URLs if --url is specified
-        if let Some(ref url) = self.cli.url {
-            config.target_urls = vec![url.clone()];
-        }
-
-        // Override with original target URL if --test-original is specified
-        if self.cli.test_original {
-            config.target_urls = vec!["https://target".to_string()];
-        }
+        // Set target URLs from CLI
+        config.target_urls = self.cli.get_urls();
 
         if config.debug {
             println!("Applied CLI overrides to configuration");
             println!("Final config: test_count={}, timeout={}s, enable_color={}", 
                     config.test_count, config.timeout_seconds, config.enable_color);
-            if let Some(ref url) = self.cli.url {
-                println!("Testing custom URL: {}", url);
-            }
+            println!("Testing URLs: {}", config.target_urls.join(", "));
         }
 
         Ok(())

@@ -598,7 +598,7 @@ impl ErrorRecoveryManager {
                     .log().await;
                 
                 for sub_strategy in strategies {
-                    self.apply_recovery_strategy(sub_strategy, correlation_id).await;
+                    Box::pin(self.apply_recovery_strategy(sub_strategy, correlation_id)).await;
                 }
             }
         }
@@ -853,7 +853,7 @@ mod tests {
         
         let recoverable_error = AppError::network("Network issue");
         
-        let result = manager.recover_from_error(
+        let result: Result<(), RecoveryError> = manager.recover_from_error(
             &recoverable_error,
             "test_operation",
             || Box::pin(async {

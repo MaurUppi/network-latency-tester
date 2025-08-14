@@ -4,7 +4,7 @@ pub mod help;
 
 pub use help::HelpSystem;
 
-use clap::Parser;
+use clap::{Parser, ArgAction};
 
 /// Network Latency Tester - A high-performance tool for measuring network connectivity
 #[derive(Parser, Debug, Clone)]
@@ -19,6 +19,10 @@ pub struct Cli {
     #[arg(short, long, value_parser = parse_duration, default_value_t = crate::defaults::DEFAULT_TIMEOUT.as_secs())]
     pub timeout: u64,
 
+    /// Force colored output
+    #[arg(long)]
+    pub color: bool,
+
     /// Disable colored output
     #[arg(long)]
     pub no_color: bool,
@@ -32,8 +36,8 @@ pub struct Cli {
     pub debug: bool,
 
     /// Target URL to test (can be used multiple times)
-    #[arg(short, long)]
-    pub url: Option<String>,
+    #[arg(short, long = "url", action = ArgAction::Append)]
+    pub urls: Vec<String>,
 
     /// Test the original target URL from bash script
     #[arg(long)]
@@ -53,6 +57,31 @@ pub struct Cli {
 }
 
 impl Cli {
+    /// Validate CLI arguments for conflicts and requirements
+    pub fn validate(&self) -> Result<(), String> {
+        // Check for conflicting color flags
+        if self.color && self.no_color {
+            return Err("Cannot specify both --color and --no-color".to_string());
+        }
+
+        // Check that at least one URL is provided (either via --url or --test-original)
+        if self.urls.is_empty() && !self.test_original {
+            return Err("Must specify at least one URL via --url or use --test-original".to_string());
+        }
+
+        Ok(())
+    }
+
+    /// Get validated URLs for testing
+    pub fn get_urls(&self) -> Vec<String> {
+        if self.test_original {
+            // When --test-original is specified, use only the original target
+            vec!["https://target".to_string()]
+        } else {
+            self.urls.clone()
+        }
+    }
+
     /// Check if help should be displayed for a specific topic
     pub fn should_show_topic_help(&self) -> bool {
         self.help_topic.is_some()
@@ -65,7 +94,13 @@ impl Cli {
 
     /// Check if colors should be enabled
     pub fn use_colors(&self) -> bool {
-        !self.no_color && supports_color()
+        if self.color {
+            true  // Force color output when --color is specified
+        } else if self.no_color {
+            false // Disable color output when --no-color is specified
+        } else {
+            supports_color() // Use automatic detection
+        }
     }
 
     /// Display help for the specified topic or main help
@@ -91,12 +126,12 @@ impl Cli {
         summary.push_str("Configuration Summary:\n");
         summary.push_str(&format!("  Test count: {}\n", self.count));
         summary.push_str(&format!("  Timeout: {}s\n", self.timeout));
-        summary.push_str(&format!("  Colored output: {}\n", !self.no_color));
+        summary.push_str(&format!("  Colored output: {}\n", self.use_colors()));
         summary.push_str(&format!("  Verbose mode: {}\n", self.verbose));
         summary.push_str(&format!("  Debug mode: {}\n", self.debug));
         
-        if let Some(ref url) = self.url {
-            summary.push_str(&format!("  Custom URL: {}\n", url));
+        if !self.urls.is_empty() {
+            summary.push_str(&format!("  Custom URLs: {}\n", self.urls.join(", ")));
         }
         
         if self.test_original {
@@ -208,7 +243,8 @@ mod tests {
         assert!(cli.no_color);
         assert!(cli.verbose);
         assert!(cli.debug);
-        assert_eq!(cli.url.as_ref().unwrap(), "https://example.com");
+        assert_eq!(cli.urls.len(), 1);
+        assert_eq!(cli.urls[0], "https://example.com");
         assert!(cli.test_original);
         assert_eq!(cli.dns_servers.as_ref().unwrap(), "8.8.8.8,1.1.1.1");
         assert_eq!(cli.doh_providers.as_ref().unwrap(), "https://dns.google/dns-query");
@@ -267,7 +303,7 @@ mod tests {
         assert!(summary.contains("Test count: 5"));
         assert!(summary.contains("Timeout: 20s"));
         assert!(summary.contains("Verbose mode: true"));
-        assert!(summary.contains("Custom URL: https://test.com"));
+        assert!(summary.contains("Custom URLs: https://test.com"));
     }
 
     #[test]
@@ -288,12 +324,15 @@ mod tests {
 
     #[test]
     fn test_use_colors_method() {
-        let cli_no_color = Cli::parse_from(&["test", "--no-color"]);
+        let cli_no_color = Cli::parse_from(&["test", "--no-color", "--test-original"]);
         assert!(!cli_no_color.use_colors());
 
-        let cli_color = Cli::parse_from(&["test"]);
+        let cli_color = Cli::parse_from(&["test", "--color", "--test-original"]);
+        assert!(cli_color.use_colors());
+
+        let cli_default = Cli::parse_from(&["test", "--test-original"]);
         // Result depends on environment, but should not panic
-        let _uses_colors = cli_color.use_colors();
+        let _uses_colors = cli_default.use_colors();
     }
 
     #[test]
@@ -364,6 +403,77 @@ mod tests {
         assert!(help.contains("Unknown help topic"));
         assert!(help.contains("invalid_topic"));
         assert!(help.contains("Available topics:"));
+    }
+
+    #[test]
+    fn test_multiple_url_parsing() {
+        let cli = Cli::parse_from(&[
+            "test",
+            "--url", "https://example.com",
+            "--url", "https://test.com",
+            "--url", "https://google.com"
+        ]);
+
+        assert_eq!(cli.urls.len(), 3);
+        assert_eq!(cli.urls[0], "https://example.com");
+        assert_eq!(cli.urls[1], "https://test.com");
+        assert_eq!(cli.urls[2], "https://google.com");
+    }
+
+    #[test]
+    fn test_cli_validation() {
+        // Test conflicting color flags
+        let cli_conflict = Cli::parse_from(&["test", "--color", "--no-color", "--test-original"]);
+        assert!(cli_conflict.validate().is_err());
+        assert!(cli_conflict.validate().unwrap_err().contains("Cannot specify both --color and --no-color"));
+
+        // Test no URLs provided
+        let cli_no_urls = Cli::parse_from(&["test"]);
+        assert!(cli_no_urls.validate().is_err());
+        assert!(cli_no_urls.validate().unwrap_err().contains("Must specify at least one URL"));
+
+        // Test valid configurations
+        let cli_with_url = Cli::parse_from(&["test", "--url", "https://example.com"]);
+        assert!(cli_with_url.validate().is_ok());
+
+        let cli_with_original = Cli::parse_from(&["test", "--test-original"]);
+        assert!(cli_with_original.validate().is_ok());
+
+        let cli_color_only = Cli::parse_from(&["test", "--color", "--test-original"]);
+        assert!(cli_color_only.validate().is_ok());
+
+        let cli_no_color_only = Cli::parse_from(&["test", "--no-color", "--test-original"]);
+        assert!(cli_no_color_only.validate().is_ok());
+    }
+
+    #[test]
+    fn test_get_urls_method() {
+        // Test with custom URLs only
+        let cli_custom = Cli::parse_from(&[
+            "test",
+            "--url", "https://example.com",
+            "--url", "https://test.com"
+        ]);
+        let urls = cli_custom.get_urls();
+        assert_eq!(urls.len(), 2);
+        assert_eq!(urls[0], "https://example.com");
+        assert_eq!(urls[1], "https://test.com");
+
+        // Test with test-original only
+        let cli_original = Cli::parse_from(&["test", "--test-original"]);
+        let urls = cli_original.get_urls();
+        assert_eq!(urls.len(), 1);
+        assert_eq!(urls[0], "https://target");
+
+        // Test with both custom URLs and test-original (test-original takes precedence)
+        let cli_both = Cli::parse_from(&[
+            "test",
+            "--url", "https://example.com",
+            "--test-original"
+        ]);
+        let urls = cli_both.get_urls();
+        assert_eq!(urls.len(), 1);
+        assert_eq!(urls[0], "https://target");
     }
 
     #[test]  

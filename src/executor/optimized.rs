@@ -402,9 +402,9 @@ impl OptimizedExecutor {
         let success_count = individual_results.iter().filter(|m| m.is_successful()).count() as u32;
         let total_count = config.test_count;
         
-        // Create test result
+        // Create test result with composite key format: "{url}::{dns_config_name}"
         let mut result = TestResult {
-            config_name: Self::dns_config_name(dns_config),
+            config_name: format!("{}::{}", url, Self::dns_config_name(dns_config)),
             dns_config: dns_config.clone(),
             url: url.to_string(),
             individual_results,

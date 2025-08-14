@@ -1,6 +1,7 @@
 //! Error handling for the network latency tester
 
 pub mod user_messages;
+mod recovery;
 
 pub use user_messages::{
     UserMessageProvider, EnhancedErrorMessage, UserMessageConfig,
@@ -10,7 +11,7 @@ pub use user_messages::{
 use thiserror::Error;
 
 /// Custom error types for the network latency tester
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum AppError {
     /// Configuration-related errors
     #[error("Configuration error: {0}")]

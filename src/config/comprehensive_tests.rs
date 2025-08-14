@@ -144,7 +144,7 @@ mod cli_parsing_tests {
         assert!(cli.debug);
         assert_eq!(cli.count, 50);
         assert_eq!(cli.timeout, 120);
-        assert!(cli.url.is_some());
+        assert!(!cli.urls.is_empty());
     }
     
     #[test]
