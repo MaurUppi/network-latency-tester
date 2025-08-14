@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.1.9] - 2025-08-14
+
+### Added
+- **Multiple URL Support**: `--url` flag can now be used multiple times to test multiple targets simultaneously
+- **Explicit Color Control**: Added `--color` flag to force colored output alongside existing `--no-color`
+- **Enhanced Output**: Results now properly grouped by target URL with clear section headers and Unicode symbols
+
+### Changed
+- Updated CLI argument parsing with `ArgAction::Append` for multiple URLs
+- Implemented composite result keys format: `"{url}::{dns_config_name}"`
+- Enhanced output formatter with target-specific sections for better readability
+
+### Fixed
+- Compilation errors in error recovery system (added Clone trait to AppError)
+- Async recursion issues in recovery strategy application
+- CLI validation and error handling improvements
+
+### Technical Improvements
+- Added comprehensive CLI validation and error handling
+- Updated configuration system to handle multiple targets
+- Enhanced test execution engine for multiple URL support
+- Improved result organization and display logic
+
+### Testing
+- All CLI unit tests passing (15/15)
+- End-to-end testing with multiple URLs verified
+- Color output control fully functional
+
+### Compatibility
+- **Backward Compatible**: All existing CLI functionality preserved
+- Single URL usage works exactly as before
+- `--test-original` behavior unchanged
+
+This release resolves 2 critical bash parity test failures:
+1. ✅ Multiple URL CLI error: `--url` can be used multiple times
+2. ✅ Missing `--color` option: Explicit color control implemented
+
+## [0.1.8] - 2025-08-14
+
+### Fixed
+- Fixed 'Use test_0 for optimal performance' recommendation issue
+- Improved result key generation in executor
+
 ## [0.1.7] - 2025-08-14
 
 ### Fixed
