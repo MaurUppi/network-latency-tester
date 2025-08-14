@@ -62,20 +62,39 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Extract commit message
+        id: extract_commit
+        run: |
+          # Get the latest commit message (excluding merge commits)
+          commit_message=$(git log --format=%B -n 1 --no-merges HEAD)
+          
+          # Check if commit message contains release notes (starts with "Release v")
+          if echo "$commit_message" | grep -q "^Release v"; then
+            # Extract everything after the first line as release notes
+            release_notes=$(echo "$commit_message" | tail -n +2 | sed 's/^$/\n/g')
+            echo "has_release_notes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_release_notes=false" >> $GITHUB_OUTPUT
+            release_notes=""
+          fi
+          
+          # Save release notes to output (handle multiline)
+          {
+            echo "release_notes<<EOF"
+            echo "$release_notes"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
       - name: Create Release
         id: create_release
         if: steps.check_release.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          release_body="## Network Latency Tester ${{ steps.get_version.outputs.version }}
-          
-          ### Features
-          - High-performance network latency testing
-          - DNS configuration support
-          - Cross-platform compatibility
-          - Advanced statistics and reporting
-          
+          if [ "${{ steps.extract_commit.outputs.has_release_notes }}" = "true" ]; then
+            # Use commit message release notes
+            release_body="${{ steps.extract_commit.outputs.release_notes }}
+            
           ### Downloads
           Choose the appropriate binary for your platform:
           - **Windows**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-windows-x64.zip\`
@@ -99,6 +118,40 @@ jobs:
           \`\`\`
           
           For more information, see the [README](https://github.com/MaurUppi/network-latency-tester/blob/main/README.md)."
+          else
+            # Use default release notes
+            release_body="## Network Latency Tester ${{ steps.get_version.outputs.version }}
+            
+            ### Features
+            - High-performance network latency testing
+            - DNS configuration support
+            - Cross-platform compatibility
+            - Advanced statistics and reporting
+            
+            ### Downloads
+            Choose the appropriate binary for your platform:
+            - **Windows**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-windows-x64.zip\`
+            - **macOS Intel**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-darwin-x64.tar.gz\`  
+            - **macOS Apple Silicon**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-darwin-arm64.tar.gz\`
+            - **Linux x64 (Ubuntu/Debian)**: \`network-latency-tester-${{ steps.get_version.outputs.version }}-linux-x64-ubuntu.tar.gz\`
+            
+            ### Installation
+            1. Download the appropriate archive for your platform
+            2. Extract the archive
+            3. Run the \`nlt\` binary (Network Latency Tester)
+            
+            ### Additional Platforms
+            Users on other platforms can build from source:
+            
+            **FreeBSD, Alpine Linux (musl), Linux ARM64:**
+            \`\`\`bash
+            git clone https://github.com/MaurUppi/network-latency-tester
+            cd network-latency-tester
+            cargo build --release
+            \`\`\`
+            
+            For more information, see the [README](https://github.com/MaurUppi/network-latency-tester/blob/main/README.md)."
+          fi
           
           gh release create ${{ steps.get_version.outputs.version }} \
             --title "Release ${{ steps.get_version.outputs.version }}" \
