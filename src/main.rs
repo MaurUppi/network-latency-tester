@@ -222,10 +222,10 @@ fn create_execution_results(test_results: Vec<TestResult>, _urls: &[String], _dn
         performance_summary: HashMap::new(),
     };
     
-    // Convert test results to HashMap using unique identifiers
+    // Convert test results to HashMap using actual configuration names
     let mut results_map = HashMap::new();
-    for (i, result) in test_results.into_iter().enumerate() {
-        results_map.insert(format!("test_{}", i), result);
+    for result in test_results.into_iter() {
+        results_map.insert(result.config_name.clone(), result);
     }
     
     ExecutionResults::new(execution_summary, results_map)
