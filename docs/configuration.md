@@ -97,7 +97,7 @@ network-latency-tester --count 20      # Command-line argument
 ### Output and Behavior Options
 
 #### `--test-original`
-- **Description**: Test the original ctok.ai URL from the bash script
+- **Description**: Test the original target URL from the bash script
 - **Type**: Flag (boolean)
 - **Default**: false
 - **Example**:

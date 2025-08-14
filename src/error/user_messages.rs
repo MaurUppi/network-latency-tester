@@ -197,7 +197,7 @@ impl UserMessageProvider {
     
     /// Get enhanced error message for an AppError
     pub fn get_enhanced_message(&mut self, error: &AppError) -> EnhancedErrorMessage {
-        let error_key = format!("{}:{}", error.category(), error.to_string());
+        let error_key = format!("{}:{}", error.category(), error);
         
         if let Some(cached_message) = self.message_cache.get(&error_key) {
             return cached_message.clone();
@@ -805,7 +805,7 @@ impl UserMessageProvider {
         // Title
         if self.config.use_color {
             output.push_str(&format!("{} {}\n", 
-                "🚨".to_string(),
+                "🚨",
                 message.message.red().bold()
             ));
         } else {

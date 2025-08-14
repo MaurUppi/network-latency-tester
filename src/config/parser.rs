@@ -69,9 +69,9 @@ impl ConfigParser {
             config.target_urls = vec![url.clone()];
         }
 
-        // Override with original ctok.ai URL if --test-original is specified
+        // Override with original target URL if --test-original is specified
         if self.cli.test_original {
-            config.target_urls = vec!["https://ctok.ai".to_string()];
+            config.target_urls = vec!["https://target".to_string()];
         }
 
         if config.debug {
@@ -207,7 +207,7 @@ mod tests {
         let config = parser.parse().unwrap();
         
         assert_eq!(config.target_urls.len(), 1);
-        assert_eq!(config.target_urls[0], "https://ctok.ai");
+        assert_eq!(config.target_urls[0], "https://target");
     }
 
     #[test]

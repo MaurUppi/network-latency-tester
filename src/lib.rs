@@ -17,6 +17,7 @@ pub mod executor;
 pub mod output;
 pub mod models;
 pub mod types;
+pub mod utils;
 
 // Re-export commonly used types
 pub use error::{AppError, Result};
@@ -36,15 +37,15 @@ pub mod defaults {
 
     pub const DEFAULT_TEST_COUNT: u32 = 5;
     pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
-    pub const DEFAULT_TARGET_URLS: &[&str] = &["https://as.ctok.ai"];
+    pub const DEFAULT_TARGET_URLS: &[&str] = &["https://bing.com"];
     pub const DEFAULT_DNS_SERVERS: &[&str] = &[
-        "120.53.53.102",  // Tencent DNS
+        "114.114.114.114",  // 114 DNS
         "223.5.5.5",      // Alibaba DNS
-        "223.6.6.6",      // Alibaba DNS Secondary
+        "119.29.29.29", /* Tencent DNSPod */
     ];
     pub const DEFAULT_DOH_PROVIDERS: &[&str] = &[
-        "https://137618-io7m09tk35h1lurw.alidns.com/dns-query",  // Aliyun DoH
-        "https://hk1.pro.xns.one/6EMqIkLe5E4/dns-query",         // NovaXNS
+        "https://cloudflare-dns.com/dns-query", /* Cloudflare */
+        "https://dns.google/dns-query",         // Google
     ];
     pub const DEFAULT_ENABLE_COLOR: bool = true;
 }

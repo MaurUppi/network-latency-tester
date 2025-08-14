@@ -41,7 +41,7 @@ network-latency-tester --url https://google.com
 
 ### Test Original Script Compatibility
 ```bash
-# Run the original ctok.ai test for compatibility
+# Run the original target test for compatibility
 network-latency-tester --test-original
 ```
 

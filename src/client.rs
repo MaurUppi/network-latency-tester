@@ -148,6 +148,7 @@ pub struct ConnectivityTest {
 /// Network latency tester HTTP client implementation
 pub struct NetworkClient {
     dns_manager: Arc<DnsManager>,
+    #[allow(dead_code)]
     client: Client,
     default_timeout: Duration,
 }
@@ -673,7 +674,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_network_client_creation() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager);
         
         assert!(client.is_ok());
@@ -683,7 +684,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_network_client_with_timeout() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let timeout = Duration::from_secs(5);
         let client = NetworkClient::with_timeout(dns_manager, timeout);
         
@@ -694,7 +695,7 @@ mod tests {
 
     #[test]
     fn test_client_factory_creation() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let factory = ClientFactory::new(dns_manager);
         
         // Test different client creation methods
@@ -793,7 +794,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve_url_with_ip() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager).unwrap();
         let dns_config = DnsConfig::System;
         
@@ -809,7 +810,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve_url_invalid() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager).unwrap();
         let dns_config = DnsConfig::System;
         
@@ -821,7 +822,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve_url_no_host() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager).unwrap();
         let dns_config = DnsConfig::System;
         
@@ -835,7 +836,7 @@ mod tests {
 
     #[test]
     fn test_create_custom_client() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager).unwrap();
         let dns_config = DnsConfig::System;
         
@@ -852,7 +853,7 @@ mod tests {
 
     #[test]
     fn test_create_custom_client_invalid_url() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager).unwrap();
         let dns_config = DnsConfig::System;
         
@@ -870,7 +871,7 @@ mod tests {
 
     #[test]
     fn test_custom_client_redirect_configuration() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager).unwrap();
         let dns_config = DnsConfig::System;
         
@@ -898,7 +899,7 @@ mod tests {
 
     #[test]
     fn test_dns_config_system_handling() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager).unwrap();
         
         let request = HttpRequest::new(
@@ -914,7 +915,7 @@ mod tests {
 
     #[test] 
     fn test_dns_config_custom_handling() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager).unwrap();
         
         let request = HttpRequest::new(
@@ -930,7 +931,7 @@ mod tests {
 
     #[test]
     fn test_dns_config_doh_handling() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager).unwrap();
         
         let request = HttpRequest::new(
@@ -946,7 +947,7 @@ mod tests {
 
     #[test]
     fn test_url_port_extraction() {
-        let dns_manager = Arc::new(crate::dns::DnsManager::new().unwrap());
+        let dns_manager = Arc::new(DnsManager::new().unwrap());
         let client = NetworkClient::new(dns_manager).unwrap();
         let dns_config = DnsConfig::System;
         

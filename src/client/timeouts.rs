@@ -227,6 +227,7 @@ impl Default for TimeoutManager {
 
 /// Adaptive timeout for a specific operation and target
 struct AdaptiveTimeout {
+    #[allow(dead_code)]
     operation: NetworkOperation,
     measurements: Vec<Duration>,
     success_count: usize,
@@ -341,6 +342,7 @@ impl TimeoutStatistics {
 
 /// Timeout optimization recommendations
 pub struct TimeoutOptimizer {
+    #[allow(dead_code)]
     manager: TimeoutManager,
 }
 

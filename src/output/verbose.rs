@@ -14,13 +14,13 @@ use crate::{
 };
 use std::{
     fmt::Write as _,
-    collections::HashMap,
 };
 use colored::Colorize;
 
 /// Verbose timing output formatter
 pub struct VerboseTimingFormatter {
     /// Application configuration
+    #[allow(dead_code)]
     config: Config,
     /// Performance logger for timing analysis
     perf_logger: PerformanceLogger,
@@ -581,12 +581,10 @@ impl VerboseTimingFormatter {
         }
 
         // Configuration-specific recommendations
-        if let Some(fastest_config) = results.test_results.iter()
-            .min_by(|a, b| {
-                let a_time = a.1.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
-                let b_time = b.1.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
-                a_time.partial_cmp(&b_time).unwrap_or(std::cmp::Ordering::Equal)
-            }) {
+        if let Some(fastest_config) = {
+            use crate::utils::comparison::test_result_min_comparator;
+            results.test_results.iter().min_by(test_result_min_comparator())
+        } {
             recommendations.push(format!("• Use '{}' configuration for best performance", fastest_config.0));
         }
 
@@ -660,11 +658,10 @@ mod tests {
     use super::*;
     use crate::{
         models::{TimingMetrics, Statistics, TestResult},
-        types::{DnsConfig, TestStatus},
+        types::DnsConfig,
         executor::{ExecutionSummary, ExecutionResults},
     };
-    use std::time::Duration;
-    use chrono::Utc;
+    use std::{time::Duration, collections::HashMap};
 
     fn create_test_config() -> Config {
         Config {
@@ -798,6 +795,8 @@ mod tests {
             "https://example.com".to_string(),
         );
         result.statistics = Some(stats);
+        result.success_count = 5;
+        result.total_count = 5;
         
         let mut test_results = HashMap::new();
         test_results.insert("Fast Config".to_string(), result);
@@ -821,6 +820,7 @@ mod tests {
         };
         
         let console_summary = formatter.format_console_timing_summary(&results).await.unwrap();
+        println!("Console summary output: {}", console_summary);
         
         assert!(console_summary.contains("Fast Config"));
         assert!(console_summary.contains("100.0ms"));

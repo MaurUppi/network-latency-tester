@@ -17,6 +17,7 @@ use std::{
 /// Certificate validation test suite
 pub struct CertificateValidationTester {
     validator: CertificateValidator,
+    #[allow(dead_code)]
     config: PlatformNetworkConfig,
 }
 

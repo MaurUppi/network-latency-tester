@@ -103,7 +103,7 @@ mod env_parsing_tests {
     
     #[test]
     fn test_env_var_boolean_validation() {
-        // Boolean values are case sensitive (only "true"/"false" allowed)
+        /* Boolean values are case sensitive (only "true"/"false" allowed) */
         assert!(EnvManager::validate_env_var("ENABLE_COLOR", "true").is_ok());
         assert!(EnvManager::validate_env_var("ENABLE_COLOR", "false").is_ok());
         
@@ -163,7 +163,7 @@ mod cli_parsing_tests {
         
         // Should use original URL, not the provided one
         assert_eq!(config.target_urls.len(), 1);
-        assert_eq!(config.target_urls[0], "https://ctok.ai");
+        assert_eq!(config.target_urls[0], "https://target");
     }
 }
 

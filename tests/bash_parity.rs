@@ -5,14 +5,12 @@
 //! behavior, and functionality.
 
 use assert_cmd::prelude::*;
-use predicates::prelude::*;
 use std::process::Command;
 use regex::Regex;
-use std::collections::HashSet;
 
 /// Helper function to create a test command
 fn create_test_cmd() -> Command {
-    Command::cargo_bin("network-latency-tester").unwrap()
+    Command::cargo_bin("nlt").unwrap()
 }
 
 /// Expected features that should match the original bash script
@@ -567,7 +565,7 @@ fn test_bilingual_output_parity() {
     for (chinese, english_options) in bilingual_pairs {
         if stdout.contains(chinese) {
             // If Chinese term exists, should also have corresponding English terms
-            let has_english_equivalent = english_options.iter()
+            let _has_english_equivalent = english_options.iter()
                 .any(|eng| stdout.contains(eng));
             
             // Note: This is somewhat relaxed as the exact bilingual implementation may vary
@@ -673,7 +671,7 @@ fn test_performance_classification_parity() {
 /// Test overall feature completeness
 #[test]
 fn test_feature_completeness_parity() {
-    let features = BashScriptFeatures::default();
+    let _features = BashScriptFeatures::default();
     
     // Test a comprehensive scenario that exercises multiple features
     let output = create_test_cmd()

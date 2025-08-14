@@ -35,7 +35,7 @@ pub struct Cli {
     #[arg(short, long)]
     pub url: Option<String>,
 
-    /// Test the original ctok.ai URL from bash script
+    /// Test the original target URL from bash script
     #[arg(long)]
     pub test_original: bool,
 
@@ -88,7 +88,7 @@ impl Cli {
     pub fn get_config_summary(&self) -> String {
         let mut summary = String::new();
         
-        summary.push_str(&format!("Configuration Summary:\n"));
+        summary.push_str("Configuration Summary:\n");
         summary.push_str(&format!("  Test count: {}\n", self.count));
         summary.push_str(&format!("  Timeout: {}s\n", self.timeout));
         summary.push_str(&format!("  Colored output: {}\n", !self.no_color));
@@ -100,7 +100,7 @@ impl Cli {
         }
         
         if self.test_original {
-            summary.push_str(&format!("  Testing original URL: Yes\n"));
+            summary.push_str("  Testing original URL: Yes\n");
         }
         
         if let Some(ref dns_servers) = self.dns_servers {
@@ -117,6 +117,11 @@ impl Cli {
 
 /// Parse duration from seconds string
 fn parse_duration(s: &str) -> Result<u64, String> {
+    // Reject strings with leading + sign or other invalid formats
+    if s.starts_with('+') || s.starts_with("0x") || s.starts_with("0X") {
+        return Err(format!("Invalid duration: {}", s));
+    }
+    
     s.parse::<u64>()
         .map_err(|_| format!("Invalid duration: {}", s))
         .and_then(|secs| {
@@ -346,11 +351,12 @@ mod tests {
             assert!(!help.contains("Unknown help topic"));
         }
         
-        // Test case sensitivity - uppercase should be treated as unknown
+        // Test case insensitivity - uppercase should work (function converts to lowercase)
         let cli = Cli::parse_from(&["test", "--help-topic", "CONFIG"]);
         let help = cli.display_help();
-        assert!(help.contains("Unknown help topic")); // Should be case sensitive
-        assert!(help.contains("CONFIG")); // Should include the invalid topic name
+        assert!(!help.contains("Unknown help topic")); // Should be case insensitive
+        // Check for content from config help
+        assert!(help.contains("CONFIGURATION REFERENCE")); // Should show config help
         
         // Test completely invalid topic
         let cli = Cli::parse_from(&["test", "--help-topic", "invalid_topic"]);

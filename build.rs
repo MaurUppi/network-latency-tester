@@ -19,7 +19,7 @@ fn set_build_info() {
     
     // Get git commit hash if available
     if let Ok(output) = Command::new("git")
-        .args(&["rev-parse", "--short", "HEAD"])
+        .args(["rev-parse", "--short", "HEAD"])
         .output() 
     {
         if output.status.success() {
@@ -30,7 +30,7 @@ fn set_build_info() {
     
     // Get git branch if available
     if let Ok(output) = Command::new("git")
-        .args(&["rev-parse", "--abbrev-ref", "HEAD"])
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()
     {
         if output.status.success() {

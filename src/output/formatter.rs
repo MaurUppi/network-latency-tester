@@ -140,7 +140,7 @@ impl PlainFormatter {
         }
 
         // Calculate column widths
-        let column_widths = self.calculate_column_widths(&format, rows)?;
+        let column_widths = self.calculate_column_widths(format, rows)?;
         
         let mut output = String::new();
         
@@ -152,7 +152,7 @@ impl PlainFormatter {
             }
             
             let headers: Vec<String> = format.columns.iter().map(|c| c.header.clone()).collect();
-            output.push_str(&self.create_row(&headers, &column_widths, &format));
+            output.push_str(&self.create_row(&headers, &column_widths, format));
             output.push('\n');
             
             if format.show_borders {
@@ -163,7 +163,7 @@ impl PlainFormatter {
         
         // Data rows
         for row in rows {
-            output.push_str(&self.create_row(row, &column_widths, &format));
+            output.push_str(&self.create_row(row, &column_widths, format));
             output.push('\n');
         }
         
@@ -513,12 +513,10 @@ impl OutputFormatter for PlainFormatter {
                     } else {
                         "✓ Connected".to_string()
                     }
+                } else if let Some(ref error) = status.error_message {
+                    format!("✗ Failed: {}", error)
                 } else {
-                    if let Some(ref error) = status.error_message {
-                        format!("✗ Failed: {}", error)
-                    } else {
-                        "✗ Disconnected".to_string()
-                    }
+                    "✗ Disconnected".to_string()
                 };
                 writeln!(output, "  {} - {}", target, status_str)
                     .map_err(|e| AppError::io(format!("Failed to format diagnostics: {}", e)))?;

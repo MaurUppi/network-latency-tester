@@ -804,7 +804,6 @@ impl NetworkDiagnostics {
     }
 
     /// Helper methods for individual diagnostic operations
-
     async fn test_internet_connectivity(&self) -> ConnectivityStatus {
         // Test connectivity to a well-known reliable host
         let test_hosts = vec!["8.8.8.8", "1.1.1.1", "google.com"];
@@ -1222,8 +1221,8 @@ impl NetworkDiagnostics {
     fn analyze_http_issues(
         &self,
         _http: &HttpDiagnostics,
-        _issues: &mut Vec<DiagnosticIssue>,
-        _recommendations: &mut Vec<Recommendation>,
+        _issues: &mut [DiagnosticIssue],
+        _recommendations: &mut [Recommendation],
     ) {
         // HTTP issue analysis would go here
         // For now, skip as the implementation is already quite comprehensive
@@ -1416,7 +1415,7 @@ impl NetworkDiagnostics {
         }
 
         // Ensure score is between 0 and 1
-        score.max(0.0).min(1.0)
+        score.clamp(0.0, 1.0)
     }
 
     /// URL parsing utility methods
@@ -1475,6 +1474,10 @@ impl NetworkDiagnostics {
                     return "Quad9".to_string();
                 } else if host.contains("adguard") {
                     return "AdGuard".to_string();
+                } else if host.contains("doh.pub") {
+                    return "Tencent DNSPod".to_string();
+                } else if host.contains("alidns") {
+                    return "AliDNS".to_string();
                 }
                 return host.to_string();
             }
@@ -1548,14 +1551,14 @@ impl DiagnosticReport {
                 self.system_health.warning_issues.join(", ")));
         }
         
-        output.push_str("\n");
+        output.push('\n');
         
         // Component Scores
         output.push_str("📈 Component Scores:\n");
         for (component, score) in &self.system_health.component_scores {
             output.push_str(&format!("  • {}: {:.1}%\n", component, score * 100.0));
         }
-        output.push_str("\n");
+        output.push('\n');
         
         // Top Issues
         if !self.issues.is_empty() {
@@ -1564,7 +1567,7 @@ impl DiagnosticReport {
                 output.push_str(&format!("{}. {} [{}]\n", 
                     i + 1, issue.title, self.format_severity(issue.severity)));
             }
-            output.push_str("\n");
+            output.push('\n');
         }
         
         // Top Recommendations
@@ -1574,7 +1577,7 @@ impl DiagnosticReport {
                 output.push_str(&format!("{}. {} [{}]\n", 
                     i + 1, rec.title, self.format_priority(rec.priority)));
             }
-            output.push_str("\n");
+            output.push('\n');
         }
         
         // Execution Summary

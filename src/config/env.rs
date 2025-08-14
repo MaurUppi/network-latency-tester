@@ -33,7 +33,7 @@ impl EnvManager {
 # but can be overridden by command-line arguments.
 
 # Target URLs to test (comma-separated)
-# TARGET_URLS=https://as.ctok.ai,https://example.com
+# TARGET_URLS=https://as.target,https://example.com
 
 # Custom DNS servers to test (comma-separated IP addresses)
 # DNS_SERVERS=8.8.8.8,1.1.1.1,208.67.222.222
@@ -53,7 +53,7 @@ impl EnvManager {
 # Example configurations for different scenarios:
 #
 # Testing multiple targets:
-# TARGET_URLS=https://as.ctok.ai,https://api.openai.com,https://www.google.com
+# TARGET_URLS=https://as.target,https://api.openai.com,https://www.google.com
 #
 # Testing with popular public DNS servers:
 # DNS_SERVERS=8.8.8.8,1.1.1.1,208.67.222.222,9.9.9.9

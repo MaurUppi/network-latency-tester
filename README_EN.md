@@ -69,7 +69,7 @@ The binary will be available at `target/release/nlt`.
 | `--no-color` | Disable colored output | `false` |
 | `--verbose` | Enable verbose output | `false` |
 | `--debug` | Enable debug output | `false` |
-| `--test-original` | Test original ctok.ai URL | `false` |
+| `--test-original` | Test original target URL | `false` |
 | `--help` | Show help information | - |
 
 ### Environment Variables

@@ -31,6 +31,7 @@ pub struct OptimizedExecutor {
     /// Shared HTTP client pool
     client_pool: Arc<ClientPool>,
     /// DNS manager
+    #[allow(dead_code)]
     dns_manager: Arc<DnsManager>,
     /// Execution configuration
     config: ExecutionConfig,
@@ -99,10 +100,10 @@ impl SystemResources {
         
         // Calculate optimal concurrency based on CPU cores
         // Use 2x CPU cores for I/O bound operations, but cap at reasonable limits
-        let optimal_concurrency = (cpu_cores * 2).min(50).max(4);
+        let optimal_concurrency = (cpu_cores * 2).clamp(4, 50);
         
         // Calculate max connections based on memory and CPU
-        let max_concurrent_connections = (cpu_cores * 4).min(100).max(10);
+        let max_concurrent_connections = (cpu_cores * 4).clamp(10, 100);
         
         Self {
             cpu_cores,
@@ -363,7 +364,7 @@ impl OptimizedExecutor {
         
         // Execute multiple iterations using the same client
         for iteration in 0..config.test_count {
-            let iteration_start = Instant::now();
+            let _iteration_start = Instant::now();
             
             let timing_result = timeout(config.timeout, async {
                 Self::execute_single_request(&client, url).await
@@ -445,16 +446,16 @@ impl OptimizedExecutor {
         let is_https = url.starts_with("https://");
         
         let dns_duration = Duration::from_millis(
-            (total_ms / 10).max(1).min(50) // 10% of total, 1-50ms range
+            (total_ms / 10).clamp(1, 50) // 10% of total, 1-50ms range
         );
         
         let connect_duration = Duration::from_millis(
-            (total_ms / 5).max(5).min(200) // 20% of total, 5-200ms range  
+            (total_ms / 5).clamp(5, 200) // 20% of total, 5-200ms range  
         );
         
         let tls_duration = if is_https {
             Some(Duration::from_millis(
-                (total_ms / 4).max(10).min(300) // 25% of total for HTTPS, 10-300ms range
+                (total_ms / 4).clamp(10, 300) // 25% of total for HTTPS, 10-300ms range
             ))
         } else {
             None
@@ -531,7 +532,7 @@ impl TestExecutor for OptimizedExecutor {
             failed_tests: 0,         // Would be tracked in implementation
             avg_execution_time_ms: 0.0, // Would be calculated from results
             total_execution_duration: Duration::ZERO, // Would be tracked
-            memory_usage_bytes: Some(stats.pool_stats.total_clients * std::mem::size_of::<Client>()),
+            memory_usage_bytes: Some(stats.pool_stats.total_clients * size_of::<Client>()),
         }
     }
     

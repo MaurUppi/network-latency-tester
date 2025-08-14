@@ -70,7 +70,7 @@ cargo build --release
 | `--no-color` | 禁用彩色输出 | `false` |
 | `--verbose` | 启用详细输出 | `false` |
 | `--debug` | 启用调试输出 | `false` |
-| `--test-original` | 测试原始 ctok.ai URL | `false` |
+| `--test-original` | 测试原始 target URL | `false` |
 | `--help` | 显示帮助信息 | - |
 
 ### 环境变量

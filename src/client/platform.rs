@@ -323,7 +323,7 @@ impl PlatformNetworkDiagnostics {
 
     /// Check platform networking capabilities
     pub async fn check_networking_capabilities(&self) -> NetworkCapabilities {
-        let mut capabilities = NetworkCapabilities {
+        let capabilities = NetworkCapabilities {
             platform: crate::dns::platform::get_platform_name(),
             http2_support: self.test_http2_support().await,
             ipv6_support: self.test_ipv6_support().await,
@@ -420,7 +420,7 @@ impl NetworkCapabilities {
         report.push_str(&format!("  TLS 1.3: {}\n", if self.tls_1_3_support { "✓ Supported" } else { "✗ Not supported" }));
         report.push_str(&format!("  Connection Pooling: {}\n", if self.connection_pooling_effective { "✓ Effective" } else { "✗ Limited" }));
         report.push_str(&format!("  High Concurrency: {}\n", if self.high_concurrency_support { "✓ Supported" } else { "✗ Limited" }));
-        report.push_str(&format!("  Recommended Timeouts:\n"));
+        report.push_str("  Recommended Timeouts:\n");
         report.push_str(&format!("    DNS: {:?}\n", self.recommended_timeouts.dns_resolution));
         report.push_str(&format!("    TCP: {:?}\n", self.recommended_timeouts.tcp_connection));
         report.push_str(&format!("    TLS: {:?}\n", self.recommended_timeouts.tls_handshake));

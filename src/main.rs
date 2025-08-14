@@ -9,7 +9,7 @@ use network_latency_tester::{
     config::parser::load_config,
     client::ClientFactory,
     dns::DnsManager,
-    executor::{TestExecutor, ExecutionConfig, ExecutionMode, create_executor_for_mode},
+    executor::{ExecutionMode, create_executor_for_mode},
     output::{OutputFormatterFactory, OutputCoordinator},
     error::{AppError, Result},
     models::TestResult,
@@ -84,15 +84,7 @@ async fn run_application(cli: Cli) -> Result<()> {
 
     // Initialize core components
     let dns_manager = Arc::new(DnsManager::new()?);
-    let client_factory = ClientFactory::new(dns_manager.clone());
-    let http_client = Arc::new(client_factory.create_network_client_with_timeout(config.timeout())?);
-    // Create execution configuration
-    let execution_config = ExecutionConfig {
-        test_count: config.test_count,
-        timeout: config.timeout(),
-        verbose: config.verbose,
-        debug: config.debug,
-    };
+    let _client_factory = ClientFactory::new(dns_manager.clone());
 
     // Create and configure test executor
     let executor = create_executor_for_mode(&config, ExecutionMode::Optimized).await?;
@@ -205,8 +197,8 @@ fn print_error_suggestions(error: &AppError) {
 }
 
 /// Convert test results into ExecutionResults structure
-fn create_execution_results(test_results: Vec<TestResult>, urls: &[String], dns_configs: &[DnsConfig]) -> network_latency_tester::executor::ExecutionResults {
-    use network_latency_tester::executor::{ExecutionResults, ExecutionSummary, ConfigPerformance};
+fn create_execution_results(test_results: Vec<TestResult>, _urls: &[String], _dns_configs: &[DnsConfig]) -> network_latency_tester::executor::ExecutionResults {
+    use network_latency_tester::executor::{ExecutionResults, ExecutionSummary};
     use std::collections::HashMap;
     
     let total_tests = test_results.len() as u32;

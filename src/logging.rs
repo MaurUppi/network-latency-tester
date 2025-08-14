@@ -266,32 +266,32 @@ impl Logger {
     }
     
     /// Create a log entry builder
-    pub fn log(&self, level: LogLevel, message: &str) -> LogEntryBuilder {
+    pub fn log(&self, level: LogLevel, message: &str) -> LogEntryBuilder<'_> {
         LogEntryBuilder::new(self, level, message.to_string())
     }
     
     /// Convenience methods for different log levels
-    pub fn trace(&self, message: &str) -> LogEntryBuilder {
+    pub fn trace(&self, message: &str) -> LogEntryBuilder<'_> {
         self.log(LogLevel::Trace, message)
     }
     
-    pub fn debug(&self, message: &str) -> LogEntryBuilder {
+    pub fn debug(&self, message: &str) -> LogEntryBuilder<'_> {
         self.log(LogLevel::Debug, message)
     }
     
-    pub fn info(&self, message: &str) -> LogEntryBuilder {
+    pub fn info(&self, message: &str) -> LogEntryBuilder<'_> {
         self.log(LogLevel::Info, message)
     }
     
-    pub fn warn(&self, message: &str) -> LogEntryBuilder {
+    pub fn warn(&self, message: &str) -> LogEntryBuilder<'_> {
         self.log(LogLevel::Warn, message)
     }
     
-    pub fn error(&self, message: &str) -> LogEntryBuilder {
+    pub fn error(&self, message: &str) -> LogEntryBuilder<'_> {
         self.log(LogLevel::Error, message)
     }
     
-    pub fn fatal(&self, message: &str) -> LogEntryBuilder {
+    pub fn fatal(&self, message: &str) -> LogEntryBuilder<'_> {
         self.log(LogLevel::Fatal, message)
     }
     
@@ -353,7 +353,12 @@ impl Logger {
         
         // Add correlation ID if present
         if let Some(correlation_id) = &entry.correlation_id {
-            output.push_str(&format!(" [{}]", &correlation_id[..8])); // Show first 8 chars
+            let display_id = if correlation_id.len() > 8 {
+                &correlation_id[..8]
+            } else {
+                correlation_id
+            };
+            output.push_str(&format!(" [{}]", display_id));
         }
         
         // Add fields if any
@@ -641,7 +646,7 @@ impl NetworkLogger {
     
     /// Log HTTP request
     pub async fn log_http_request(&self, url: &str, method: &str, status_code: Option<u16>, duration_ms: f64) {
-        let success = status_code.map_or(false, |code| code >= 200 && code < 400);
+        let success = status_code.is_some_and(|code| (200..400).contains(&code));
         let level = if success { LogLevel::Debug } else { LogLevel::Warn };
         
         let message = format!("{} {} -> {} in {:.1}ms", 

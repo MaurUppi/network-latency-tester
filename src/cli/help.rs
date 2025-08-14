@@ -28,27 +28,27 @@ impl HelpSystem {
         
         // Header
         help.push_str(&self.format_header(use_colors));
-        help.push_str("\n");
+        help.push('\n');
         
         // Usage section
         help.push_str(&self.format_usage_section(use_colors));
-        help.push_str("\n");
+        help.push('\n');
         
         // Options section
         help.push_str(&self.format_options_section(use_colors));
-        help.push_str("\n");
+        help.push('\n');
         
         // Examples section
         help.push_str(&self.format_examples_section(use_colors));
-        help.push_str("\n");
+        help.push('\n');
         
         // Environment variables section
         help.push_str(&self.format_environment_section(use_colors));
-        help.push_str("\n");
+        help.push('\n');
         
         // Configuration section
         help.push_str(&self.format_configuration_section(use_colors));
-        help.push_str("\n");
+        help.push('\n');
         
         // Footer with additional resources
         help.push_str(&self.format_footer(use_colors));
@@ -166,7 +166,7 @@ impl HelpSystem {
                 short: None,
                 long: "test-original",
                 value: "",
-                description: "Test the original ctok.ai URL from the bash script",
+                description: "Test the original target URL from the bash script",
                 example: Some("--test-original"),
             },
             OptionHelp {
@@ -202,7 +202,7 @@ impl HelpSystem {
         let mut output = format!("{}\n", header);
         for option in options {
             output.push_str(&option.format(use_colors));
-            output.push_str("\n");
+            output.push('\n');
         }
         
         output
@@ -230,7 +230,7 @@ impl HelpSystem {
             ExampleHelp {
                 title: "Original script compatibility test",
                 command: "network-latency-tester --test-original --count 5 --verbose",
-                description: "Run the original ctok.ai test with 5 iterations and verbose output",
+                description: "Run the original target test with 5 iterations and verbose output",
             },
             ExampleHelp {
                 title: "DNS-over-HTTPS testing",
@@ -252,7 +252,7 @@ impl HelpSystem {
         let mut output = format!("{}\n", header);
         for example in examples {
             output.push_str(&example.format(use_colors));
-            output.push_str("\n");
+            output.push('\n');
         }
         
         output

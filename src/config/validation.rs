@@ -62,14 +62,12 @@ impl ConfigValidator {
                     }
 
                     // Check for local/private networks
-                    if let Some(host) = parsed.host() {
-                        if let url::Host::Ipv4(ip) = host {
-                            if ip.is_private() || ip.is_loopback() {
-                                warnings.push(ValidationWarning::new(
-                                    ValidationLevel::Info,
-                                    format!("URL '{}' targets private/local network", url)
-                                ));
-                            }
+                    if let Some(url::Host::Ipv4(ip)) = parsed.host() {
+                        if ip.is_private() || ip.is_loopback() {
+                            warnings.push(ValidationWarning::new(
+                                ValidationLevel::Info,
+                                format!("URL '{}' targets private/local network", url)
+                            ));
                         }
                     }
 
@@ -248,6 +246,7 @@ impl ConfigValidator {
     /// Check if IP is a known public DNS server
     fn is_known_public_dns(ip: &IpAddr) -> bool {
         let known_dns = [
+            // IPv4 DNS servers
             "8.8.8.8",      // Google DNS
             "8.8.4.4",      // Google DNS
             "1.1.1.1",      // Cloudflare DNS
@@ -256,11 +255,20 @@ impl ConfigValidator {
             "208.67.220.220", // OpenDNS
             "9.9.9.9",      // Quad9 DNS
             "149.112.112.112", // Quad9 DNS
-            "76.76.19.19",  // Alternate DNS
+            "114.114.114.114",  // Alternate DNS
             "76.223.100.101", // Alternate DNS
             "120.53.53.102", // Tencent DNS
             "223.5.5.5",    // Alibaba DNS
-            "223.6.6.6",    // Alibaba DNS
+            "119.29.29.29",    // Tencent DNSPod
+            // IPv6 DNS servers
+            "2001:4860:4860::8888", // Google IPv6 DNS
+            "2001:4860:4860::8844", // Google IPv6 DNS
+            "2606:4700:4700::1111", // Cloudflare IPv6 DNS
+            "2606:4700:4700::1001", // Cloudflare IPv6 DNS
+            "2620:119:35::35",      // OpenDNS IPv6
+            "2620:119:53::53",      // OpenDNS IPv6
+            "2620:fe::fe",          // Quad9 IPv6 DNS
+            "2620:fe::9",           // Quad9 IPv6 DNS
         ];
 
         known_dns.iter().any(|&known| known.parse::<IpAddr>().unwrap() == *ip)
@@ -328,12 +336,8 @@ impl ValidationWarning {
     }
 
     /// Format warning for display
-    pub fn format(&self, use_color: bool) -> String {
-        if use_color {
-            format!("[{}] {}", self.level.as_str(), self.message)
-        } else {
-            format!("[{}] {}", self.level.as_str(), self.message)
-        }
+    pub fn format(&self, _use_color: bool) -> String {
+        format!("[{}] {}", self.level.as_str(), self.message)
     }
 }
 
@@ -453,12 +457,13 @@ impl ConnectivityResult {
 }
 
 /// Connectivity test report
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ConnectivityReport {
     pub url_results: Vec<(String, ConnectivityResult)>,
     pub dns_results: Vec<(String, ConnectivityResult)>,
     pub doh_results: Vec<(String, ConnectivityResult)>,
 }
+
 
 impl ConnectivityReport {
     /// Create a new connectivity report

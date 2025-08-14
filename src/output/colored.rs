@@ -105,6 +105,7 @@ impl Default for ColorScheme {
 
 /// Colored formatter implementation
 pub struct ColoredFormatter {
+    #[allow(dead_code)]
     plain_formatter: PlainFormatter,
     options: FormattingOptions,
     color_scheme: ColorScheme,
@@ -248,7 +249,7 @@ impl ColoredFormatter {
         // Group results by URL
         let mut results_by_url: std::collections::HashMap<String, Vec<&TestResult>> = std::collections::HashMap::new();
         for result in results.values() {
-            results_by_url.entry(result.url.clone()).or_insert_with(Vec::new).push(result);
+            results_by_url.entry(result.url.clone()).or_default().push(result);
         }
 
         // Sort URLs for consistent output
@@ -274,16 +275,14 @@ impl ColoredFormatter {
                 .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
 
             // Header for each section
-            if true {
-                let header = format!("{:<40} {:>12} {:>12} {:>15} {:>12}",
-                    "Configuration", "Success", "Avg Response", "Min/Max", "Level");
+            let header = format!("{:<40} {:>12} {:>12} {:>15} {:>12}",
+                "Configuration", "Success", "Avg Response", "Min/Max", "Level");
+            
+            writeln!(output, "{}", self.bold(&header))
+                .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
                 
-                writeln!(output, "{}", self.bold(&header))
-                    .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
-                
-                writeln!(output, "{}", "─".repeat(95).color(self.color_scheme.border))
-                    .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
-            }
+            writeln!(output, "{}", "─".repeat(95).color(self.color_scheme.border))
+                .map_err(|e| AppError::io(format!("Failed to format table: {}", e)))?;
 
             // Sort this URL's results by DNS type first, then by performance within each type
             let mut url_results = results_by_url[url].clone();
@@ -307,7 +306,7 @@ impl ColoredFormatter {
                 // First sort by DNS type
                 match a_type.cmp(&b_type) {
                     std::cmp::Ordering::Equal => {
-                        // If same DNS type, sort by performance (best first)
+                        // If same DNS type, sort by performance ( the best first)
                         let a_time = a.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
                         let b_time = b.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
                         a_time.partial_cmp(&b_time).unwrap_or(std::cmp::Ordering::Equal)
@@ -535,12 +534,10 @@ impl OutputFormatter for ColoredFormatter {
                     } else {
                         ("✅", "Connected".to_string())
                     }
+                } else if let Some(ref error) = status.error_message {
+                    ("❌", format!("Failed: {}", error))
                 } else {
-                    if let Some(ref error) = status.error_message {
-                        ("❌", format!("Failed: {}", error))
-                    } else {
-                        ("❌", "Disconnected".to_string())
-                    }
+                    ("❌", "Disconnected".to_string())
                 };
                 let truncated_target = if target.len() > 40 {
                     format!("{}...", &target[..37])

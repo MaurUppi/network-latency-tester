@@ -113,27 +113,21 @@ impl ExecutionResults {
 
     /// Get the best performing configuration based on average response time
     pub fn best_config(&self) -> Option<&str> {
+        use crate::utils::comparison::test_result_min_comparator;
         self.test_results
             .iter()
             .filter(|(_, result)| result.success_count > 0)
-            .min_by(|a, b| {
-                let a_time = a.1.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
-                let b_time = b.1.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(f64::MAX);
-                a_time.partial_cmp(&b_time).unwrap_or(std::cmp::Ordering::Equal)
-            })
-            .map(|(_, result)| result.config_name.as_str())
+            .min_by(test_result_min_comparator())
+            .map(|(name, _)| name.as_str())
     }
     
     /// Get the worst performing configuration based on average response time
     pub fn worst_config(&self) -> Option<&str> {
+        use crate::utils::comparison::test_result_max_comparator;
         self.test_results
             .iter()
             .filter(|(_, result)| result.success_count > 0)
-            .max_by(|a, b| {
-                let a_time = a.1.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(0.0);
-                let b_time = b.1.statistics.as_ref().map(|s| s.total_avg_ms).unwrap_or(0.0);
-                a_time.partial_cmp(&b_time).unwrap_or(std::cmp::Ordering::Equal)
-            })
+            .max_by(test_result_max_comparator())
             .map(|(name, _)| name.as_str())
     }
     
@@ -229,6 +223,7 @@ impl TestExecutorFactory {
 
 /// Basic test executor without optimizations
 pub struct BasicTestExecutor {
+    #[allow(dead_code)]
     config: ExecutionConfig,
     statistics: ExecutorStatistics,
 }
@@ -267,6 +262,7 @@ impl TestExecutor for BasicTestExecutor {
 pub struct TunedTestExecutor {
     optimized_executor: OptimizedExecutor,
     tuner: ConcurrencyTuner,
+    #[allow(dead_code)]
     config: ExecutionConfig,
 }
 
@@ -324,13 +320,13 @@ impl TunedTestExecutor {
         &self,
         url: &str,
         dns_config: &DnsConfig,
-        params: &ExecutionParameters,
+        _params: &ExecutionParameters,
     ) -> Result<Vec<TestResult>> {
         // Execute tests using the optimized executor
         // This is a simplified implementation - in practice, you'd integrate
         // the tuning parameters into the optimized executor's execution
         self.optimized_executor
-            .execute_optimized_tests(&[url.to_string()], &[dns_config.clone()])
+            .execute_optimized_tests(&[url.to_string()], std::slice::from_ref(dns_config))
             .await
     }
     
@@ -367,7 +363,7 @@ impl TestExecutor for TunedTestExecutor {
             avg_execution_time_ms: 0.0, // Would be calculated from results
             total_execution_duration: Duration::ZERO, // Would be tracked
             memory_usage_bytes: Some(
-                executor_stats.pool_stats.total_clients * std::mem::size_of::<reqwest::Client>()
+                executor_stats.pool_stats.total_clients * size_of::<reqwest::Client>()
             ),
         }
     }

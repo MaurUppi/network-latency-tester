@@ -246,14 +246,14 @@ impl StatisticsEngine {
     pub fn add_results(&mut self, results: Vec<TestResult>) {
         for result in results {
             let config_name = result.config_name.clone();
-            self.results.entry(config_name).or_insert_with(Vec::new).push(result);
+            self.results.entry(config_name).or_default().push(result);
         }
     }
 
     /// Add a single test result
     pub fn add_result(&mut self, result: TestResult) {
         let config_name = result.config_name.clone();
-        self.results.entry(config_name).or_insert_with(Vec::new).push(result);
+        self.results.entry(config_name).or_default().push(result);
     }
 
     /// Generate comprehensive statistical analysis
