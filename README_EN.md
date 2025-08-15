@@ -16,6 +16,32 @@ A high-performance network latency testing tool built in Rust that measures conn
 - **Multi-URL Testing**: Test multiple target URLs simultaneously with clear result grouping
 - **Enhanced Performance Analysis**: Realistic timing breakdowns with accurate fast/slow classification
 
+## What's New in v0.2.0 - Complete Update System
+
+- **🚀 Auto-Update Feature**: Comprehensive version management system with upgrade, downgrade, and intelligent platform detection
+  - **CLI Arguments**: `--update` (`-u`), `--version <VERSION>` (`-v`), `--force` (`-f`)
+  - **Update Modes**: Interactive version selection, direct version targeting, force downgrade
+  - **Multi-Source**: Intelligent fallback system (Local cache → GitHub Atom feeds → REST API)
+  - **Platform Detection**: Automatic detection and filtering for current OS/architecture binaries
+  - **Geographic Optimization**: China mainland users get accelerated download mirrors
+  - **Safety Features**: Downgrade protection, version validation, backup capability, and rollback support
+
+### Update Feature Usage Examples
+
+```bash
+# Check for updates (interactive)
+nlt --update
+
+# Update to specific version
+nlt --update --version v0.1.8
+
+# Force downgrade (with safety warnings)
+nlt --update --version 0.1.5 --force
+
+# Get detailed update help
+nlt --help-topic update
+```
+
 ## What's New in v0.1.6
 
 - **Improved DNS Grouping**: Results now organized by DNS type (System DNS → Custom DNS → DoH)
@@ -70,6 +96,9 @@ The binary will be available at `target/release/nlt`.
 | `--verbose` | Enable verbose output | `false` |
 | `--debug` | Enable debug output | `false` |
 | `--test-original` | Test original target URL | `false` |
+| `--update` (`-u`) | Check for updates and manage versions | `false` |
+| `--version <VERSION>` (`-v`) | Target version for update/downgrade | - |
+| `--force` (`-f`) | Force version change, including downgrades | `false` |
 | `--help` | Show help information | - |
 
 ### Environment Variables

@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.2.0] - 2025-08-15
+
+### Added - Major Update Feature Release
+- **🚀 Complete Update System**: Comprehensive version management with intelligent multi-source data retrieval
+  - **CLI Arguments**: `--update` (`-u`), `--version <VERSION>` (`-v`), `--force` (`-f`) for update operations
+  - **Update Modes**: Interactive version selection, direct version targeting, and force downgrade capabilities
+  - **Data Sources**: Intelligent fallback system using GitHub Atom feeds, REST API, and local cache
+  - **Platform Detection**: Automatic detection and filtering for current OS/architecture
+  - **Geographic Optimization**: Download acceleration for China mainland with global fallback
+  - **Safety Features**: Downgrade protection, version validation, backup capability, and rollback support
+
+### Update Feature Components
+- **Version Management (Task 6)**: Semantic version comparison and validation with comprehensive parsing
+- **Cache Management (Task 7)**: Local caching with ETag support and intelligent invalidation
+- **GitHub Atom Feeds (Task 8)**: Primary data source with no rate limits and XML parsing
+- **GitHub REST API (Task 9)**: Fallback data source with rate limit handling and comprehensive metadata
+- **Data Source Manager (Task 10)**: Orchestrates multi-source data retrieval with platform filtering
+- **Geographic Detection (Task 11)**: Location-aware download acceleration and mirror selection
+- **Interactive UI (Task 12)**: User-friendly version selection with progress indicators
+- **Main Integration (Task 13)**: Seamless CLI integration with update workflow
+- **Help System (Task 20)**: Comprehensive documentation accessible via `--help-topic update`
+
+### Usage Examples
+```bash
+# Check for updates interactively
+nlt --update
+
+# Update to specific version
+nlt --update --version v0.1.8
+
+# Force downgrade with safety warnings
+nlt --update --version 0.1.5 --force
+
+# Get detailed update help
+nlt --help-topic update
+```
+
+### Technical Improvements
+- **Multi-Platform Support**: Automatic binary selection for Windows, macOS (Intel/Apple Silicon), and Linux
+- **Intelligent Fallback**: Cache → Atom feeds → REST API with graceful degradation
+- **Version Safety**: Prevents accidental downgrades without explicit force flag
+- **Geographic Awareness**: China mainland users get accelerated downloads, others use direct GitHub
+- **Comprehensive Validation**: Version format validation, release availability checks, platform compatibility
+- **Rich User Experience**: Colored output, progress indicators, detailed error messages with suggestions
+
+### Performance & Reliability
+- **Fast Cache Access**: Local cache provides instant responses for recent release data
+- **No Rate Limits**: Primary Atom feeds source avoids GitHub API rate limitations
+- **Concurrent Safety**: Thread-safe operations with proper resource management
+- **Error Recovery**: Comprehensive error handling with actionable user guidance
+- **Network Resilience**: Multiple data sources ensure availability even during GitHub service issues
+
+### Security & Safety
+- **HTTPS Only**: All downloads use HTTPS with certificate validation
+- **Release Authenticity**: Verification through official GitHub release channels
+- **Downgrade Warnings**: Clear warnings about potential security and compatibility risks
+- **Pre-release Detection**: Clear marking and warnings for alpha/beta/RC versions
+- **Backup Support**: Capability to backup current version before updates (where supported)
+
 ## [0.1.9] - 2025-08-14
 
 ### Added
