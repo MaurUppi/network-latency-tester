@@ -215,7 +215,7 @@ impl VersionManager {
             current_semver.minor,
             current_semver.patch + 1,
         );
-        suggestions.push(self.from_semver(&patch_semver)?);
+        suggestions.push(VersionManager::from_semver(&patch_semver)?);
 
         // Minor increment
         let minor_semver = SemVer::new(
@@ -223,7 +223,7 @@ impl VersionManager {
             current_semver.minor + 1,
             0,
         );
-        suggestions.push(self.from_semver(&minor_semver)?);
+        suggestions.push(VersionManager::from_semver(&minor_semver)?);
 
         // Major increment
         let major_semver = SemVer::new(
@@ -231,7 +231,7 @@ impl VersionManager {
             0,
             0,
         );
-        suggestions.push(self.from_semver(&major_semver)?);
+        suggestions.push(VersionManager::from_semver(&major_semver)?);
 
         Ok(suggestions)
     }
@@ -248,7 +248,7 @@ impl VersionManager {
     }
 
     /// Convert semver::Version to our Version struct
-    fn from_semver(&self, semver: &SemVer) -> Result<Version> {
+    fn from_semver(semver: &SemVer) -> Result<Version> {
         let pre_release = if semver.pre.is_empty() {
             None
         } else {
