@@ -14,6 +14,7 @@ use network_latency_tester::{
     error::{AppError, Result},
     models::TestResult,
     types::DnsConfig,
+    updater::UpdateCoordinator,
     VERSION, PKG_NAME,
 };
 use std::{process, error::Error};
@@ -49,6 +50,14 @@ async fn main() {
 
 /// Main application logic
 async fn run_application(cli: Cli) -> Result<()> {
+    // Early validation of CLI arguments
+    cli.validate().map_err(AppError::validation)?;
+
+    // Early update mode detection - handle update operations before any other processing
+    if cli.is_update_mode() {
+        return handle_update_mode(&cli).await;
+    }
+
     // Show debug info if requested
     if cli.debug {
         println!("{} v{}", PKG_NAME, VERSION);
@@ -159,6 +168,71 @@ async fn run_application(cli: Cli) -> Result<()> {
     }
 }
 
+/// Handle update mode operations with clean exit
+async fn handle_update_mode(cli: &Cli) -> Result<()> {
+    // Create update coordinator with configuration from CLI
+    let coordinator = UpdateCoordinator::with_config(cli.use_colors(), cli.verbose);
+
+    // Convert CLI arguments to update arguments
+    let update_args = cli.to_update_args();
+
+    if cli.verbose {
+        println!("{} v{} - Update Mode", PKG_NAME, VERSION);
+        println!("Update arguments: interactive={}, target_version={:?}, force_downgrade={}", 
+            update_args.interactive, 
+            update_args.target_version, 
+            update_args.force_downgrade);
+        println!();
+    }
+
+    // Execute update flow
+    let result = coordinator.execute_update_flow(&update_args).await?;
+
+    // Handle update results and display appropriate information
+    match result {
+        network_latency_tester::updater::UpdateResult::UpdateAvailable { current, latest, download_url } => {
+            println!("Update available!");
+            println!("Current version: {}", current.original);
+            println!("Latest version: {}", latest.tag_name);
+            println!("Download URL: {}", download_url);
+            
+            if cli.verbose {
+                println!("Release date: {}", latest.published_at);
+                println!("Release page: {}", latest.html_url);
+            }
+        },
+        network_latency_tester::updater::UpdateResult::AlreadyUpToDate { current } => {
+            println!("Already up to date at version {}", current.original);
+        },
+        network_latency_tester::updater::UpdateResult::DowngradeAvailable { current, target, download_url } => {
+            println!("Downgrade available (forced)");
+            println!("Current version: {}", current.original);
+            println!("Target version: {}", target.tag_name);
+            println!("Download URL: {}", download_url);
+            
+            if !cli.force {
+                return Err(AppError::update("Downgrade detected. Use --force to proceed."));
+            }
+        },
+        network_latency_tester::updater::UpdateResult::InteractiveSelection { current, available_releases } => {
+            println!("Interactive version selection");
+            println!("Current version: {}", current.original);
+            println!("Available releases: {}", available_releases.len());
+            
+            // The interactive flow would be handled by the UpdateCoordinator
+            // This result indicates that interactive mode was requested but not yet completed
+        },
+    }
+
+    if cli.verbose {
+        let duration = coordinator.get_duration();
+        println!();
+        println!("Update operation completed in {:.2}s", duration.as_secs_f64());
+    }
+
+    Ok(())
+}
+
 /// Print helpful suggestions for common errors
 fn print_error_suggestions(error: &AppError) {
     match error {
@@ -191,6 +265,28 @@ fn print_error_suggestions(error: &AppError) {
             eprintln!("  - Increase timeout with --timeout option");
             eprintln!("  - Reduce test count with --count option");
             eprintln!("  - Check system resources");
+        },
+        AppError::Update { .. } => {
+            eprintln!();
+            eprintln!("Update troubleshooting:");
+            eprintln!("  - Check your internet connection");
+            eprintln!("  - Verify version format (e.g., 'v0.1.7' or '0.1.7')");
+            eprintln!("  - Use --force flag for downgrades");
+            eprintln!("  - Try again later if GitHub services are unavailable");
+        },
+        AppError::Version { .. } => {
+            eprintln!();
+            eprintln!("Version format help:");
+            eprintln!("  - Use semantic version format: '1.2.3'");
+            eprintln!("  - Include 'v' prefix if desired: 'v1.2.3'");
+            eprintln!("  - Check available versions with: nlt --update");
+        },
+        AppError::Geographic { .. } => {
+            eprintln!();
+            eprintln!("Geographic detection help:");
+            eprintln!("  - Check your internet connection");
+            eprintln!("  - Download acceleration will default to global");
+            eprintln!("  - This won't prevent updates from working");
         },
         _ => {}
     }
