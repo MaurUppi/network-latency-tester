@@ -34,7 +34,7 @@ pub mod version;     // Task 6: Version comparison and validation logic
 pub mod cache;       // Task 7: Cache management system
 pub mod feeds;       // Task 8: GitHub Atom feeds client
 pub mod github;      // Task 9: GitHub REST API client
-// pub mod data;        // Task 10: Data source management layer
+pub mod data;        // Task 10: Data source management layer
 // pub mod geo;         // Task 11: Geographic detection
 // pub mod interactive; // Task 12: Interactive user interface
 
@@ -47,6 +47,7 @@ pub use version::VersionManager;
 pub use cache::{CacheManager, CacheStats};
 pub use feeds::{FeedsClient, FeedStats};
 pub use github::{GitHubApiClient, GitHubApiStats, ApiAvailability, RateLimitInfo};
+pub use data::{DataSourceManager, DataSourceStats, DataSourceStatus, DataSourcePriority};
 
 /// Update operation results
 #[derive(Debug, Clone)]
@@ -305,6 +306,7 @@ impl UpdateCoordinator {
     }
 
     /// Log success message with optional color
+    #[allow(dead_code)]
     fn log_success(&self, message: &str) {
         if self.use_colors {
             use colored::Colorize;
@@ -325,6 +327,7 @@ impl UpdateCoordinator {
     }
 
     /// Log error message with optional color
+    #[allow(dead_code)]
     fn log_error(&self, message: &str) {
         if self.use_colors {
             use colored::Colorize;
