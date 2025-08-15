@@ -325,19 +325,32 @@ impl PlatformInfo {
     pub fn matches_asset_name(&self, asset_name: &str) -> bool {
         let asset_lower = asset_name.to_lowercase();
         
-        // Check architecture match
-        let arch_match = asset_lower.contains(&self.arch) ||
-            (self.arch == "aarch64" && asset_lower.contains("arm64"));
+        // Map current platform to CI archive naming convention
+        let expected_patterns = self.get_ci_archive_patterns();
         
-        // Check OS match
-        let os_match = match self.os.as_str() {
-            "macos" => asset_lower.contains("darwin") || asset_lower.contains("macos"),
-            "linux" => asset_lower.contains("linux"),
-            "windows" => asset_lower.contains("windows") || asset_lower.contains("win"),
-            _ => asset_lower.contains(&self.os),
-        };
-        
-        arch_match && os_match
+        // Check if asset name contains any of the expected patterns
+        expected_patterns.iter().any(|pattern| asset_lower.contains(pattern))
+    }
+    
+    /// Get CI archive naming patterns for this platform
+    pub fn get_ci_archive_patterns(&self) -> Vec<String> {
+        match (self.os.as_str(), self.arch.as_str()) {
+            ("windows", "x86_64") => vec!["windows-x64".to_string()],
+            ("macos", "x86_64") => vec!["darwin-x64".to_string()], 
+            ("macos", "aarch64") => vec!["darwin-arm64".to_string()],
+            ("linux", "x86_64") => vec!["linux-x64-ubuntu".to_string(), "linux-x64".to_string()],
+            // Fallback patterns for edge cases
+            ("windows", arch) => vec![format!("windows-{}", arch)],
+            ("macos", arch) => {
+                let arch_name = if arch == "aarch64" { "arm64" } else { arch };
+                vec![format!("darwin-{}", arch_name)]
+            },
+            ("linux", arch) => {
+                let arch_name = if arch == "aarch64" { "arm64" } else { arch };
+                vec![format!("linux-{}", arch_name)]
+            },
+            _ => vec![format!("{}-{}", self.os, self.arch)],
+        }
     }
     
     /// Get preferred file extension for this platform
@@ -397,16 +410,44 @@ mod tests {
 
     #[test]
     fn test_platform_asset_matching() {
-        let platform = PlatformInfo {
+        let macos_x64_platform = PlatformInfo {
             os: "macos".to_string(),
             arch: "x86_64".to_string(),
             target_triple: "x86_64-apple-darwin".to_string(),
         };
         
-        assert!(platform.matches_asset_name("nlt-v0.1.10-x86_64-apple-darwin.tar.gz"));
-        assert!(platform.matches_asset_name("binary-x86_64-darwin-release.tar.gz"));
-        assert!(!platform.matches_asset_name("nlt-v0.1.10-aarch64-unknown-linux-gnu.tar.gz"));
-        assert!(!platform.matches_asset_name("nlt-v0.1.10-x86_64-pc-windows-msvc.zip"));
+        // Test actual CI release filename patterns
+        assert!(macos_x64_platform.matches_asset_name("network-latency-tester-v0.1.9-darwin-x64.tar.gz"));
+        assert!(!macos_x64_platform.matches_asset_name("network-latency-tester-v0.1.9-darwin-arm64.tar.gz"));
+        assert!(!macos_x64_platform.matches_asset_name("network-latency-tester-v0.1.9-linux-x64-ubuntu.tar.gz"));
+        assert!(!macos_x64_platform.matches_asset_name("network-latency-tester-v0.1.9-windows-x64.zip"));
+        
+        let macos_arm64_platform = PlatformInfo {
+            os: "macos".to_string(),
+            arch: "aarch64".to_string(),
+            target_triple: "aarch64-apple-darwin".to_string(),
+        };
+        
+        assert!(macos_arm64_platform.matches_asset_name("network-latency-tester-v0.1.9-darwin-arm64.tar.gz"));
+        assert!(!macos_arm64_platform.matches_asset_name("network-latency-tester-v0.1.9-darwin-x64.tar.gz"));
+        
+        let linux_platform = PlatformInfo {
+            os: "linux".to_string(),
+            arch: "x86_64".to_string(),
+            target_triple: "x86_64-unknown-linux-gnu".to_string(),
+        };
+        
+        assert!(linux_platform.matches_asset_name("network-latency-tester-v0.1.9-linux-x64-ubuntu.tar.gz"));
+        assert!(!linux_platform.matches_asset_name("network-latency-tester-v0.1.9-windows-x64.zip"));
+        
+        let windows_platform = PlatformInfo {
+            os: "windows".to_string(),
+            arch: "x86_64".to_string(),
+            target_triple: "x86_64-pc-windows-msvc".to_string(),
+        };
+        
+        assert!(windows_platform.matches_asset_name("network-latency-tester-v0.1.9-windows-x64.zip"));
+        assert!(!windows_platform.matches_asset_name("network-latency-tester-v0.1.9-darwin-x64.tar.gz"));
     }
 
     #[test]
@@ -451,9 +492,40 @@ mod tests {
             target_triple: "aarch64-apple-darwin".to_string(),
         };
         
-        // Should match both aarch64 and arm64 asset names
-        assert!(platform.matches_asset_name("nlt-v0.1.10-aarch64-apple-darwin.tar.gz"));
-        assert!(platform.matches_asset_name("nlt-v0.1.10-arm64-darwin.tar.gz"));
+        // Should match CI naming pattern for ARM64 
+        assert!(platform.matches_asset_name("network-latency-tester-v0.1.9-darwin-arm64.tar.gz"));
+        assert!(!platform.matches_asset_name("network-latency-tester-v0.1.9-darwin-x64.tar.gz"));
+    }
+    
+    #[test]
+    fn test_ci_archive_patterns() {
+        let macos_x64 = PlatformInfo {
+            os: "macos".to_string(),
+            arch: "x86_64".to_string(),
+            target_triple: "x86_64-apple-darwin".to_string(),
+        };
+        assert_eq!(macos_x64.get_ci_archive_patterns(), vec!["darwin-x64"]);
+        
+        let macos_arm64 = PlatformInfo {
+            os: "macos".to_string(),
+            arch: "aarch64".to_string(),
+            target_triple: "aarch64-apple-darwin".to_string(),
+        };
+        assert_eq!(macos_arm64.get_ci_archive_patterns(), vec!["darwin-arm64"]);
+        
+        let linux_x64 = PlatformInfo {
+            os: "linux".to_string(),
+            arch: "x86_64".to_string(),
+            target_triple: "x86_64-unknown-linux-gnu".to_string(),
+        };
+        assert_eq!(linux_x64.get_ci_archive_patterns(), vec!["linux-x64-ubuntu", "linux-x64"]);
+        
+        let windows_x64 = PlatformInfo {
+            os: "windows".to_string(),
+            arch: "x86_64".to_string(),
+            target_triple: "x86_64-pc-windows-msvc".to_string(),
+        };
+        assert_eq!(windows_x64.get_ci_archive_patterns(), vec!["windows-x64"]);
     }
 
     #[test]
