@@ -3,6 +3,23 @@
 //! A high-performance network latency testing tool that measures connectivity
 //! to configurable target URLs using various DNS configurations including
 //! custom DNS servers and DNS-over-HTTPS providers.
+//! 
+//! ## Features
+//! 
+//! - **Network Latency Testing**: Measure connectivity to configurable URLs
+//! - **DNS Configuration Support**: Custom DNS servers and DNS-over-HTTPS providers  
+//! - **Version Management**: Built-in update system with geographic acceleration
+//! - **Cross-Platform**: Support for Windows, macOS, and Linux
+//! - **Comprehensive Output**: Colored terminal output with detailed statistics
+//! 
+//! ## Update System
+//! 
+//! The built-in update system provides:
+//! - Automatic version checking against GitHub releases
+//! - Geographic detection for optimized downloads (China mainland acceleration)
+//! - Interactive version selection with fallback to basic input
+//! - Safe downgrade protection with force override option
+//! - Semantic version parsing and comparison
 
 pub mod app;
 pub mod cli;
@@ -26,7 +43,17 @@ pub use models::{Config, TimingMetrics, TestResult, Statistics};
 pub use stats::{StatisticsEngine, StatisticalAnalysis, ExtendedStatistics, OptimizedStatisticsCalculator, RollingStats};
 pub use diagnostics::{NetworkDiagnostics, DiagnosticReport, SystemHealth};
 pub use output::{OutputFormatter, ColoredFormatter, PlainFormatter, OutputCoordinator, OutputFormatterFactory, VerboseTimingFormatter};
-pub use updater::{UpdateCoordinator, UpdateArgs, UpdateResult, UpdateMode, Version, Release, GeographicRegion, VersionManager, CacheManager, CacheStats, FeedsClient, FeedStats, GitHubApiClient, GitHubApiStats, ApiAvailability, RateLimitInfo, PlatformInfo};
+pub use updater::{
+    UpdateCoordinator, UpdateArgs, UpdateResult, UpdateMode, 
+    Version, Release, ReleaseAsset, 
+    GeographicRegion, VersionRelation, VersionChoice, PlatformInfo,
+    VersionManager, 
+    CacheManager, CacheStats,
+    FeedsClient, FeedStats,
+    GitHubApiClient, GitHubApiStats, ApiAvailability, RateLimitInfo,
+    DataSourceManager, DataSourceStats, DataSourceStatus, DataSourcePriority,
+    GeographicDetector, InteractiveUI,
+};
 
 /// Application version information
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
