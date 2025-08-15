@@ -17,6 +17,7 @@ pub mod executor;
 pub mod output;
 pub mod models;
 pub mod types;
+pub mod updater;
 pub mod utils;
 
 // Re-export commonly used types
@@ -25,6 +26,7 @@ pub use models::{Config, TimingMetrics, TestResult, Statistics};
 pub use stats::{StatisticsEngine, StatisticalAnalysis, ExtendedStatistics, OptimizedStatisticsCalculator, RollingStats};
 pub use diagnostics::{NetworkDiagnostics, DiagnosticReport, SystemHealth};
 pub use output::{OutputFormatter, ColoredFormatter, PlainFormatter, OutputCoordinator, OutputFormatterFactory, VerboseTimingFormatter};
+pub use updater::{UpdateCoordinator, UpdateArgs, UpdateResult, UpdateMode, Version, Release, GeographicRegion, VersionManager};
 
 /// Application version information
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -57,6 +57,22 @@ pub enum AppError {
     #[error("Statistics error: {0}")]
     Statistics(String),
 
+    /// Update-related errors
+    #[error("Update error: {0}")]
+    Update(String),
+
+    /// Version parsing or comparison errors
+    #[error("Version error: {0}")]
+    Version(String),
+
+    /// Geographic detection errors
+    #[error("Geographic detection error: {0}")]
+    Geographic(String),
+
+    /// Cache-related errors
+    #[error("Cache error: {0}")]
+    Cache(String),
+
     /// Generic internal errors
     #[error("Internal error: {0}")]
     Internal(String),
@@ -118,6 +134,26 @@ impl AppError {
         Self::Statistics(message.into())
     }
 
+    /// Create a new update error
+    pub fn update<S: Into<String>>(message: S) -> Self {
+        Self::Update(message.into())
+    }
+
+    /// Create a new version error
+    pub fn version<S: Into<String>>(message: S) -> Self {
+        Self::Version(message.into())
+    }
+
+    /// Create a new geographic detection error
+    pub fn geographic<S: Into<String>>(message: S) -> Self {
+        Self::Geographic(message.into())
+    }
+
+    /// Create a new cache error
+    pub fn cache<S: Into<String>>(message: S) -> Self {
+        Self::Cache(message.into())
+    }
+
     /// Create a new internal error
     pub fn internal<S: Into<String>>(message: S) -> Self {
         Self::Internal(message.into())
@@ -137,6 +173,10 @@ impl AppError {
             Self::Auth(_) => "AUTH",
             Self::TestExecution(_) => "TEST",
             Self::Statistics(_) => "STATS",
+            Self::Update(_) => "UPDATE",
+            Self::Version(_) => "VERSION",
+            Self::Geographic(_) => "GEOGRAPHIC",
+            Self::Cache(_) => "CACHE",
             Self::Internal(_) => "INTERNAL",
         }
     }
@@ -145,7 +185,9 @@ impl AppError {
     pub fn is_recoverable(&self) -> bool {
         match self {
             Self::Network(_) | Self::HttpRequest(_) | Self::Timeout(_) | Self::DnsResolution(_) => true,
+            Self::Geographic(_) | Self::Cache(_) => true,  // Network-related, can retry
             Self::Config(_) | Self::Validation(_) | Self::Parse(_) | Self::Auth(_) => false,
+            Self::Update(_) | Self::Version(_) => false,  // Business logic errors, not retryable
             Self::Io(_) | Self::TestExecution(_) | Self::Statistics(_) | Self::Internal(_) => false,
         }
     }
@@ -186,6 +228,18 @@ impl AppError {
             Self::Statistics(msg) => {
                 format!("Statistics calculation failed: {}\n\nSuggestion: This may indicate insufficient or invalid test data.", msg)
             }
+            Self::Update(msg) => {
+                format!("Update operation failed: {}\n\nSuggestion: Check your network connection, verify the version exists, or try again later.", msg)
+            }
+            Self::Version(msg) => {
+                format!("Version handling error: {}\n\nSuggestion: Check the version format (e.g., '1.2.3' or 'v1.2.3') or use --force for downgrades.", msg)
+            }
+            Self::Geographic(msg) => {
+                format!("Geographic detection failed: {}\n\nSuggestion: This won't prevent updates - the system will use global download URLs.", msg)
+            }
+            Self::Cache(msg) => {
+                format!("Cache operation failed: {}\n\nSuggestion: The cache will be rebuilt automatically. This may cause slower initial requests.", msg)
+            }
             Self::Internal(msg) => {
                 format!("Internal error: {}\n\nThis is likely a bug. Please report this issue with the error details.", msg)
             }
@@ -201,6 +255,9 @@ impl AppError {
             Self::Auth(_) => 4,  // Authentication issues
             Self::Io(_) => 5,  // I/O issues
             Self::TestExecution(_) | Self::Statistics(_) => 6,  // Test execution issues
+            Self::Update(_) => 7,  // Update operation issues
+            Self::Version(_) => 8,  // Version handling issues
+            Self::Geographic(_) | Self::Cache(_) => 9,  // Recoverable auxiliary service issues
             Self::Internal(_) => 99,  // Internal/unexpected errors
         }
     }
@@ -227,6 +284,12 @@ impl AppError {
                 }
                 Self::Io(_) | Self::TestExecution(_) | Self::Statistics(_) => {
                     format!("[{}] {}", category.cyan().bold(), message.cyan())
+                }
+                Self::Update(_) | Self::Version(_) => {
+                    format!("[{}] {}", category.bright_yellow().bold(), message.bright_yellow())
+                }
+                Self::Geographic(_) | Self::Cache(_) => {
+                    format!("[{}] {}", category.green().bold(), message.green())
                 }
                 Self::Internal(_) => {
                     format!("[{}] {}", category.bright_red().bold(), message.bright_red())
@@ -311,6 +374,15 @@ impl From<anyhow::Error> for AppError {
         Self::internal(error.to_string())
     }
 }
+
+// Update-specific error conversions
+impl From<semver::Error> for AppError {
+    fn from(error: semver::Error) -> Self {
+        Self::version(format!("Semantic version error: {}", error))
+    }
+}
+
+// Note: feed-rs and dialoguer error conversions can be added when those modules are implemented
 
 
 /// Custom Result type for the application
@@ -467,12 +539,17 @@ mod tests {
             AppError::auth("auth"),
             AppError::test_execution("test"),
             AppError::statistics("stats"),
+            AppError::update("update"),
+            AppError::version("version"),
+            AppError::geographic("geographic"),
+            AppError::cache("cache"),
             AppError::internal("internal"),
         ];
 
         let expected_categories = [
             "CONFIG", "NETWORK", "DNS", "HTTP", "TIMEOUT",
-            "VALIDATION", "IO", "PARSE", "AUTH", "TEST", "STATS", "INTERNAL"
+            "VALIDATION", "IO", "PARSE", "AUTH", "TEST", "STATS",
+            "UPDATE", "VERSION", "GEOGRAPHIC", "CACHE", "INTERNAL"
         ];
 
         for (error, expected) in errors.iter().zip(expected_categories.iter()) {
@@ -482,15 +559,21 @@ mod tests {
 
     #[test]
     fn test_recoverable_errors() {
+        // Recoverable errors (network-related)
         assert!(AppError::network("test").is_recoverable());
         assert!(AppError::http_request("test").is_recoverable());
         assert!(AppError::timeout("test").is_recoverable());
         assert!(AppError::dns_resolution("test").is_recoverable());
+        assert!(AppError::geographic("test").is_recoverable());
+        assert!(AppError::cache("test").is_recoverable());
 
+        // Non-recoverable errors (configuration/logic errors)
         assert!(!AppError::config("test").is_recoverable());
         assert!(!AppError::validation("test").is_recoverable());
         assert!(!AppError::parse("test").is_recoverable());
         assert!(!AppError::auth("test").is_recoverable());
+        assert!(!AppError::update("test").is_recoverable());
+        assert!(!AppError::version("test").is_recoverable());
     }
 
     #[test]
@@ -501,6 +584,10 @@ mod tests {
         assert_eq!(AppError::auth("test").exit_code(), 4);
         assert_eq!(AppError::io("test").exit_code(), 5);
         assert_eq!(AppError::test_execution("test").exit_code(), 6);
+        assert_eq!(AppError::update("test").exit_code(), 7);
+        assert_eq!(AppError::version("test").exit_code(), 8);
+        assert_eq!(AppError::geographic("test").exit_code(), 9);
+        assert_eq!(AppError::cache("test").exit_code(), 9);
         assert_eq!(AppError::internal("test").exit_code(), 99);
     }
 
@@ -511,6 +598,27 @@ mod tests {
         assert!(message.contains("Configuration problem"));
         assert!(message.contains("Suggestion:"));
         assert!(message.contains("Invalid URL format"));
+
+        // Test update-specific error messages
+        let update_error = AppError::update("Failed to retrieve version data");
+        let message = update_error.user_friendly_message();
+        assert!(message.contains("Update operation failed"));
+        assert!(message.contains("network connection"));
+
+        let version_error = AppError::version("Invalid version format");
+        let message = version_error.user_friendly_message();
+        assert!(message.contains("Version handling error"));
+        assert!(message.contains("version format"));
+
+        let geo_error = AppError::geographic("IP detection timeout");
+        let message = geo_error.user_friendly_message();
+        assert!(message.contains("Geographic detection failed"));
+        assert!(message.contains("global download URLs"));
+
+        let cache_error = AppError::cache("Cache file corrupted");
+        let message = cache_error.user_friendly_message();
+        assert!(message.contains("Cache operation failed"));
+        assert!(message.contains("rebuilt automatically"));
     }
 
     #[test]
@@ -710,14 +818,56 @@ mod tests {
             AppError::auth("auth"),
             AppError::test_execution("test"),
             AppError::statistics("stats"),
+            AppError::update("update"),
+            AppError::version("version"),
+            AppError::geographic("geographic"),
+            AppError::cache("cache"),
             AppError::internal("internal"),
         ];
 
         // Each should have the correct category
-        let expected = ["CONFIG", "NETWORK", "DNS", "HTTP", "TIMEOUT", "VALIDATION", "IO", "PARSE", "AUTH", "TEST", "STATS", "INTERNAL"];
+        let expected = ["CONFIG", "NETWORK", "DNS", "HTTP", "TIMEOUT", "VALIDATION", "IO", "PARSE", "AUTH", "TEST", "STATS", "UPDATE", "VERSION", "GEOGRAPHIC", "CACHE", "INTERNAL"];
         
         for (error, expected_category) in errors.iter().zip(expected.iter()) {
             assert_eq!(error.category(), *expected_category);
+        }
+    }
+
+    #[test]
+    fn test_update_error_variants() {
+        // Test update-specific error creation and properties
+        let update_error = AppError::update("Update failed");
+        assert_eq!(update_error.category(), "UPDATE");
+        assert!(!update_error.is_recoverable());
+        assert_eq!(update_error.exit_code(), 7);
+
+        let version_error = AppError::version("Invalid semantic version");
+        assert_eq!(version_error.category(), "VERSION");
+        assert!(!version_error.is_recoverable());
+        assert_eq!(version_error.exit_code(), 8);
+
+        let geo_error = AppError::geographic("Location detection failed");
+        assert_eq!(geo_error.category(), "GEOGRAPHIC");
+        assert!(geo_error.is_recoverable());
+        assert_eq!(geo_error.exit_code(), 9);
+
+        let cache_error = AppError::cache("Cache corruption detected");
+        assert_eq!(cache_error.category(), "CACHE");
+        assert!(cache_error.is_recoverable());
+        assert_eq!(cache_error.exit_code(), 9);
+    }
+
+    #[test]
+    fn test_semver_error_conversion() {
+        // Test that semver errors convert properly
+        let invalid_semver = "not.a.version";
+        match semver::Version::parse(invalid_semver) {
+            Err(semver_error) => {
+                let app_error: AppError = semver_error.into();
+                assert_eq!(app_error.category(), "VERSION");
+                assert!(app_error.to_string().contains("Semantic version error"));
+            }
+            Ok(_) => panic!("Expected semver parsing to fail"),
         }
     }
 }

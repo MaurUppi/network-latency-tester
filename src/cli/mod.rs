@@ -10,6 +10,7 @@ use clap::{Parser, ArgAction};
 #[derive(Parser, Debug, Clone)]
 #[command(name = "network-latency-tester")]
 #[command(version, about, long_about = None)]
+#[command(disable_version_flag = true)]
 pub struct Cli {
     /// Number of test iterations per DNS configuration
     #[arg(short, long, default_value_t = crate::defaults::DEFAULT_TEST_COUNT)]
@@ -28,7 +29,7 @@ pub struct Cli {
     pub no_color: bool,
 
     /// Enable verbose output
-    #[arg(short, long)]
+    #[arg(long)]
     pub verbose: bool,
 
     /// Enable debug output
@@ -36,7 +37,7 @@ pub struct Cli {
     pub debug: bool,
 
     /// Target URL to test (can be used multiple times)
-    #[arg(short, long = "url", action = ArgAction::Append)]
+    #[arg(long = "url", action = ArgAction::Append)]
     pub urls: Vec<String>,
 
     /// Test the original target URL from bash script
@@ -54,6 +55,18 @@ pub struct Cli {
     /// Show help for specific topic (config, dns, examples, timeout, output)
     #[arg(long, value_name = "TOPIC")]
     pub help_topic: Option<String>,
+
+    /// Check for updates and manage versions
+    #[arg(short = 'u', long)]
+    pub update: bool,
+
+    /// Target version for update/downgrade (e.g., "v0.1.7" or "0.1.7")
+    #[arg(short = 'v', long, requires = "update")]
+    pub version: Option<String>,
+
+    /// Force version change, including downgrades
+    #[arg(short = 'f', long, requires = "update")]
+    pub force: bool,
 }
 
 impl Cli {
@@ -64,9 +77,28 @@ impl Cli {
             return Err("Cannot specify both --color and --no-color".to_string());
         }
 
-        // Check that at least one URL is provided (either via --url or --test-original)
-        if self.urls.is_empty() && !self.test_original {
-            return Err("Must specify at least one URL via --url or use --test-original".to_string());
+        // Skip URL validation if in update mode
+        if !self.update {
+            // Check that at least one URL is provided (either via --url or --test-original)
+            if self.urls.is_empty() && !self.test_original {
+                return Err("Must specify at least one URL via --url or use --test-original".to_string());
+            }
+        }
+
+        // Validate update-related arguments
+        if self.version.is_some() && !self.update {
+            return Err("--version requires --update to be specified".to_string());
+        }
+
+        if self.force && !self.update {
+            return Err("--force requires --update to be specified".to_string());
+        }
+
+        // Validate version format if provided
+        if let Some(ref version_str) = self.version {
+            if let Err(e) = crate::updater::Version::parse(version_str) {
+                return Err(format!("Invalid version format '{}': {}", version_str, e));
+            }
         }
 
         Ok(())
@@ -147,6 +179,26 @@ impl Cli {
         }
         
         summary
+    }
+
+    /// Convert CLI args to UpdateArgs for update operations
+    pub fn to_update_args(&self) -> crate::updater::UpdateArgs {
+        crate::updater::UpdateArgs::new(self.update, self.version.clone(), self.force)
+    }
+
+    /// Check if running in update mode
+    pub fn is_update_mode(&self) -> bool {
+        self.update
+    }
+
+    /// Check if interactive update mode (update without specific version)
+    pub fn is_interactive_update(&self) -> bool {
+        self.update && self.version.is_none()
+    }
+
+    /// Check if downgrade is forced
+    pub fn is_force_downgrade(&self) -> bool {
+        self.force
     }
 }
 
@@ -485,5 +537,143 @@ mod tests {
         // Test maximum reasonable count (clap handles u32 max automatically)
         let cli = Cli::parse_from(&["test", "--count", "1000"]);
         assert_eq!(cli.count, 1000);
+    }
+
+    // Update-related tests
+    #[test]
+    fn test_update_short_parameters() {
+        let cli = Cli::parse_from(&["test", "-u"]);
+        assert!(cli.update);
+        assert!(cli.is_update_mode());
+        assert!(cli.is_interactive_update());
+        assert!(!cli.is_force_downgrade());
+        assert!(cli.version.is_none());
+        assert!(!cli.force);
+    }
+
+    #[test]
+    fn test_update_with_version_short() {
+        let cli = Cli::parse_from(&["test", "-u", "-v", "0.1.7"]);
+        assert!(cli.update);
+        assert!(cli.is_update_mode());
+        assert!(!cli.is_interactive_update());
+        assert!(!cli.is_force_downgrade());
+        assert_eq!(cli.version.as_ref().unwrap(), "0.1.7");
+        assert!(!cli.force);
+    }
+
+    #[test]
+    fn test_update_with_force_short() {
+        let cli = Cli::parse_from(&["test", "-u", "-v", "0.1.5", "-f"]);
+        assert!(cli.update);
+        assert!(cli.is_update_mode());
+        assert!(!cli.is_interactive_update());
+        assert!(cli.is_force_downgrade());
+        assert_eq!(cli.version.as_ref().unwrap(), "0.1.5");
+        assert!(cli.force);
+    }
+
+    #[test]
+    fn test_update_long_parameters() {
+        let cli = Cli::parse_from(&["test", "--update", "--version", "v1.2.3", "--force"]);
+        assert!(cli.update);
+        assert!(cli.is_update_mode());
+        assert!(!cli.is_interactive_update());
+        assert!(cli.is_force_downgrade());
+        assert_eq!(cli.version.as_ref().unwrap(), "v1.2.3");
+        assert!(cli.force);
+    }
+
+    #[test]
+    fn test_update_parameter_validation() {
+        // Test version without update fails
+        let result = std::panic::catch_unwind(|| {
+            Cli::parse_from(&["test", "--version", "1.0.0"])
+        });
+        assert!(result.is_err()); // clap should error due to requires = "update"
+
+        // Test force without update fails  
+        let result = std::panic::catch_unwind(|| {
+            Cli::parse_from(&["test", "--force"])
+        });
+        assert!(result.is_err()); // clap should error due to requires = "update"
+    }
+
+    #[test]
+    fn test_update_args_conversion() {
+        let cli = Cli::parse_from(&["test", "-u", "-v", "1.2.3", "-f"]);
+        let update_args = cli.to_update_args();
+        
+        assert!(update_args.update);
+        assert_eq!(update_args.target_version.as_ref().unwrap(), "1.2.3");
+        assert!(update_args.force_downgrade);
+        assert!(!update_args.interactive);
+    }
+
+    #[test]
+    fn test_update_interactive_args_conversion() {
+        let cli = Cli::parse_from(&["test", "--update"]);
+        let update_args = cli.to_update_args();
+        
+        assert!(update_args.update);
+        assert!(update_args.target_version.is_none());
+        assert!(!update_args.force_downgrade);
+        assert!(update_args.interactive);
+    }
+
+    #[test]
+    fn test_update_mode_validation_skip_urls() {
+        // In update mode, URLs should not be required
+        let cli = Cli::parse_from(&["test", "--update"]);
+        assert!(cli.validate().is_ok());
+        
+        let cli_with_version = Cli::parse_from(&["test", "--update", "--version", "1.0.0"]);
+        assert!(cli_with_version.validate().is_ok());
+    }
+
+    #[test]
+    fn test_update_version_format_validation() {
+        // Valid version formats should pass
+        let cli_valid_v = Cli::parse_from(&["test", "--update", "--version", "v1.2.3"]);
+        assert!(cli_valid_v.validate().is_ok());
+        
+        let cli_valid_no_v = Cli::parse_from(&["test", "--update", "--version", "1.2.3"]);
+        assert!(cli_valid_no_v.validate().is_ok());
+        
+        // Invalid version formats should fail
+        let cli_invalid = Cli::parse_from(&["test", "--update", "--version", "invalid"]);
+        assert!(cli_invalid.validate().is_err());
+        assert!(cli_invalid.validate().unwrap_err().contains("Invalid version format"));
+        
+        let cli_incomplete = Cli::parse_from(&["test", "--update", "--version", "1.2"]);
+        assert!(cli_incomplete.validate().is_err());
+        assert!(cli_incomplete.validate().unwrap_err().contains("Invalid version format"));
+    }
+
+    #[test] 
+    fn test_update_utility_methods() {
+        // Test interactive update
+        let cli_interactive = Cli::parse_from(&["test", "--update"]);
+        assert!(cli_interactive.is_update_mode());
+        assert!(cli_interactive.is_interactive_update());
+        assert!(!cli_interactive.is_force_downgrade());
+        
+        // Test direct version update
+        let cli_direct = Cli::parse_from(&["test", "--update", "--version", "1.0.0"]);
+        assert!(cli_direct.is_update_mode());
+        assert!(!cli_direct.is_interactive_update());
+        assert!(!cli_direct.is_force_downgrade());
+        
+        // Test forced downgrade
+        let cli_forced = Cli::parse_from(&["test", "--update", "--version", "0.9.0", "--force"]);
+        assert!(cli_forced.is_update_mode());
+        assert!(!cli_forced.is_interactive_update());
+        assert!(cli_forced.is_force_downgrade());
+        
+        // Test non-update mode
+        let cli_normal = Cli::parse_from(&["test", "--test-original"]);
+        assert!(!cli_normal.is_update_mode());
+        assert!(!cli_normal.is_interactive_update());
+        assert!(!cli_normal.is_force_downgrade());
     }
 }
