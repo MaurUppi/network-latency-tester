@@ -566,4 +566,414 @@ mod tests {
         assert!(err.to_string().contains("Downgrade detected"));
         assert!(err.to_string().contains("Use --force"));
     }
+
+    // ========== COMPREHENSIVE EDGE CASE TESTS ==========
+
+    #[test]
+    fn test_version_parsing_edge_cases() {
+        let manager = VersionManager::with_config(true, false);
+
+        // Test leading zeros (semver does not allow leading zeros)
+        assert!(manager.parse_version("01.0.0").is_err());
+        assert!(manager.parse_version("1.01.0").is_err());
+        assert!(manager.parse_version("1.0.01").is_err());
+
+        // Test malformed versions
+        assert!(manager.parse_version("1").is_err());
+        assert!(manager.parse_version("1.2").is_err());
+        assert!(manager.parse_version("1.2.3.4").is_err());
+        assert!(manager.parse_version("a.b.c").is_err());
+        assert!(manager.parse_version("1.2.c").is_err());
+
+        // Test negative numbers
+        assert!(manager.parse_version("-1.0.0").is_err());
+        assert!(manager.parse_version("1.-2.0").is_err());
+
+        // Test very large numbers (within u32 range)
+        let large_version = manager.parse_version("4294967295.4294967295.4294967295").unwrap();
+        assert_eq!(large_version.major, 4294967295);
+
+        // Test whitespace variations
+        let whitespace_version = manager.parse_version("  1.2.3  ").unwrap();
+        assert_eq!(whitespace_version.major, 1);
+
+        // Test various prefix patterns
+        assert!(manager.parse_version("version1.2.3").is_err());
+        assert!(manager.parse_version("V1.2.3").is_err()); // Case sensitive
+
+        // Test special characters
+        assert!(manager.parse_version("1.2.3#").is_err());
+        assert!(manager.parse_version("1.2.3@").is_err());
+        assert!(manager.parse_version("1.2.3$").is_err());
+    }
+
+    #[test]
+    fn test_prerelease_parsing_edge_cases() {
+        let manager = VersionManager::with_config(true, false);
+
+        // Valid complex pre-release identifiers
+        let version = manager.parse_version("1.0.0-alpha").unwrap();
+        assert_eq!(version.pre_release, Some("alpha".to_string()));
+
+        let version = manager.parse_version("1.0.0-alpha.1").unwrap();
+        assert_eq!(version.pre_release, Some("alpha.1".to_string()));
+
+        let version = manager.parse_version("1.0.0-alpha.beta.1").unwrap();
+        assert_eq!(version.pre_release, Some("alpha.beta.1".to_string()));
+
+        let version = manager.parse_version("1.0.0-alpha-a.b-c.de.f").unwrap();
+        assert_eq!(version.pre_release, Some("alpha-a.b-c.de.f".to_string()));
+
+        // Test numeric pre-release identifiers
+        let version = manager.parse_version("1.0.0-1").unwrap();
+        assert_eq!(version.pre_release, Some("1".to_string()));
+
+        let version = manager.parse_version("1.0.0-0.3.7").unwrap();
+        assert_eq!(version.pre_release, Some("0.3.7".to_string()));
+
+        // Invalid pre-release identifiers
+        assert!(manager.parse_version("1.0.0-").is_err()); // Empty pre-release
+        assert!(manager.parse_version("1.0.0-.alpha").is_err()); // Leading dot
+        assert!(manager.parse_version("1.0.0-alpha.").is_err()); // Trailing dot
+        assert!(manager.parse_version("1.0.0-alpha..beta").is_err()); // Double dot
+    }
+
+    #[test]
+    fn test_build_metadata_handling() {
+        let manager = VersionManager::with_config(true, false);
+
+        // Build metadata should be ignored per semver spec
+        let version1 = manager.parse_version("1.0.0+build").unwrap();
+        let version2 = manager.parse_version("1.0.0+build.1").unwrap();
+        let version3 = manager.parse_version("1.0.0").unwrap();
+
+        // All should be considered equal when build metadata is ignored
+        assert!(manager.is_same(&version1, &version2).unwrap());
+        assert!(manager.is_same(&version1, &version3).unwrap());
+
+        // Complex build metadata
+        let version = manager.parse_version("1.0.0-alpha+beta.1.build.123").unwrap();
+        assert_eq!(version.pre_release, Some("alpha".to_string()));
+        // Build metadata is stripped by semver parsing
+    }
+
+    #[test]
+    fn test_version_comparison_edge_cases() {
+        let manager = VersionManager::with_config(true, false);
+
+        // Pre-release vs release comparison
+        let release = manager.parse_version("1.0.0").unwrap();
+        let prerelease = manager.parse_version("1.0.0-alpha").unwrap();
+        
+        // Pre-release should be less than release
+        let relation = manager.compare_versions(&prerelease, &release).unwrap();
+        assert_eq!(relation, VersionRelation::Upgrade);
+
+        let relation = manager.compare_versions(&release, &prerelease).unwrap();
+        assert_eq!(relation, VersionRelation::Downgrade);
+
+        // Pre-release ordering
+        let alpha = manager.parse_version("1.0.0-alpha").unwrap();
+        let alpha1 = manager.parse_version("1.0.0-alpha.1").unwrap();
+        let beta = manager.parse_version("1.0.0-beta").unwrap();
+        let rc = manager.parse_version("1.0.0-rc.1").unwrap();
+
+        // alpha < alpha.1 < beta < rc < release
+        assert!(manager.is_newer(&alpha1, &alpha).unwrap());
+        assert!(manager.is_newer(&beta, &alpha1).unwrap());
+        assert!(manager.is_newer(&rc, &beta).unwrap());
+        assert!(manager.is_newer(&release, &rc).unwrap());
+    }
+
+    #[test]
+    fn test_downgrade_safety_edge_cases() {
+        let manager = VersionManager::with_config(true, false);
+
+        // Pre-release to release downgrade
+        let release = manager.parse_version("2.0.0").unwrap();
+        let next_prerelease = manager.parse_version("2.1.0-alpha").unwrap();
+
+        // Downgrading from pre-release to previous release should be blocked
+        assert!(manager.check_downgrade_safety(&next_prerelease, &release, false).is_err());
+        assert!(manager.check_downgrade_safety(&next_prerelease, &release, true).is_ok());
+
+        // Same version with different formatting
+        let v1 = manager.parse_version("1.0.0").unwrap();
+        let v2 = manager.parse_version("v1.0.0").unwrap();
+        assert!(manager.check_downgrade_safety(&v1, &v2, false).is_ok());
+
+        // Zero versions
+        let zero1 = manager.parse_version("0.0.0").unwrap();
+        let zero2 = manager.parse_version("0.0.1").unwrap();
+        assert!(manager.check_downgrade_safety(&zero1, &zero2, false).is_ok());
+        assert!(manager.check_downgrade_safety(&zero2, &zero1, false).is_err());
+    }
+
+    #[test]
+    fn test_version_requirements_comprehensive() {
+        let manager = VersionManager::new();
+        let version = manager.parse_version("1.2.3").unwrap();
+
+        // Exact version requirements
+        assert!(manager.satisfies_requirement(&version, "=1.2.3").unwrap());
+        assert!(!manager.satisfies_requirement(&version, "=1.2.4").unwrap());
+
+        // Range requirements
+        assert!(manager.satisfies_requirement(&version, ">1.2.2").unwrap());
+        assert!(manager.satisfies_requirement(&version, ">=1.2.3").unwrap());
+        assert!(manager.satisfies_requirement(&version, "<1.2.4").unwrap());
+        assert!(manager.satisfies_requirement(&version, "<=1.2.3").unwrap());
+
+        // Tilde requirements (patch-level changes)
+        assert!(manager.satisfies_requirement(&version, "~1.2.0").unwrap());
+        assert!(manager.satisfies_requirement(&version, "~1.2.3").unwrap());
+        assert!(!manager.satisfies_requirement(&version, "~1.3.0").unwrap());
+
+        // Caret requirements (compatible changes)
+        assert!(manager.satisfies_requirement(&version, "^1.0.0").unwrap());
+        assert!(manager.satisfies_requirement(&version, "^1.2.0").unwrap());
+        assert!(!manager.satisfies_requirement(&version, "^2.0.0").unwrap());
+
+        // Multiple requirements
+        assert!(manager.satisfies_requirement(&version, ">=1.0.0, <2.0.0").unwrap());
+        assert!(manager.satisfies_requirement(&version, ">1.2.0, <1.3.0").unwrap());
+        assert!(!manager.satisfies_requirement(&version, ">1.3.0, <2.0.0").unwrap());
+
+        // Wildcard requirements
+        assert!(manager.satisfies_requirement(&version, "1.*").unwrap());
+        assert!(manager.satisfies_requirement(&version, "1.2.*").unwrap());
+        assert!(!manager.satisfies_requirement(&version, "2.*").unwrap());
+    }
+
+    #[test]
+    fn test_find_latest_version_comprehensive() {
+        let manager = VersionManager::with_config(true, false);
+
+        // Mixed release and pre-release versions
+        let versions = vec![
+            manager.parse_version("1.0.0").unwrap(),
+            manager.parse_version("2.0.0-alpha").unwrap(),
+            manager.parse_version("1.5.0").unwrap(),
+            manager.parse_version("2.0.0-beta").unwrap(),
+            manager.parse_version("1.9.0").unwrap(),
+        ];
+
+        let latest = manager.find_latest_version(&versions).unwrap().unwrap();
+        assert_eq!(latest.original, "2.0.0-beta"); // Beta comes after alpha
+
+        // All pre-release versions
+        let pre_versions = vec![
+            manager.parse_version("1.0.0-alpha").unwrap(),
+            manager.parse_version("1.0.0-beta").unwrap(),
+            manager.parse_version("1.0.0-rc.1").unwrap(),
+        ];
+
+        let latest = manager.find_latest_version(&pre_versions).unwrap().unwrap();
+        assert_eq!(latest.original, "1.0.0-rc.1");
+
+        // Single version
+        let single = vec![manager.parse_version("1.0.0").unwrap()];
+        let latest = manager.find_latest_version(&single).unwrap().unwrap();
+        assert_eq!(latest.original, "1.0.0");
+    }
+
+    #[test]
+    fn test_increment_suggestions_edge_cases() {
+        let manager = VersionManager::new();
+
+        // Test with pre-release version (should be stripped)
+        let manager_with_pre = VersionManager::with_config(true, false);
+        let prerelease = manager_with_pre.parse_version("1.0.0-alpha").unwrap();
+        let suggestions = manager_with_pre.get_increment_suggestions(&prerelease).unwrap();
+        
+        // Suggestions should be clean versions without pre-release
+        assert!(suggestions.iter().all(|v| !v.is_prerelease()));
+        assert_eq!(suggestions[0].patch, 1); // 1.0.1
+        assert_eq!(suggestions[1].minor, 1); // 1.1.0  
+        assert_eq!(suggestions[2].major, 2); // 2.0.0
+
+        // Test with maximum values (edge case)
+        let max_version = manager.parse_version("4294967294.4294967294.4294967294").unwrap();
+        let suggestions = manager.get_increment_suggestions(&max_version).unwrap();
+        assert_eq!(suggestions[0].patch, 4294967295); // Should still work
+    }
+
+    #[test]
+    fn test_prerelease_filtering_comprehensive() {
+        let manager_with_pre = VersionManager::with_config(true, false);
+        let manager_no_pre = VersionManager::new();
+
+        let mixed_versions = vec![
+            manager_with_pre.parse_version("1.0.0").unwrap(),
+            manager_with_pre.parse_version("1.1.0-alpha").unwrap(),
+            manager_with_pre.parse_version("1.1.0-beta").unwrap(),
+            manager_with_pre.parse_version("1.1.0").unwrap(),
+            manager_with_pre.parse_version("2.0.0-rc.1").unwrap(),
+        ];
+
+        // With pre-release allowed, all versions should be kept
+        let filtered_with = manager_with_pre.filter_prerelease_versions(mixed_versions.clone());
+        assert_eq!(filtered_with.len(), 5);
+
+        // Without pre-release, only stable versions should be kept
+        let filtered_without = manager_no_pre.filter_prerelease_versions(mixed_versions);
+        assert_eq!(filtered_without.len(), 2);
+        assert!(filtered_without.iter().all(|v| !v.is_prerelease()));
+
+        // Verify specific versions are kept
+        let stable_versions: Vec<_> = filtered_without.iter().map(|v| &v.original).collect();
+        assert!(stable_versions.contains(&&"1.0.0".to_string()));
+        assert!(stable_versions.contains(&&"1.1.0".to_string()));
+    }
+
+    #[test]
+    fn test_normalization_edge_cases() {
+        let manager = VersionManager::new();
+
+        // Various whitespace patterns
+        assert_eq!(manager.normalize_version_string("\t1.2.3\n"), "1.2.3");
+        assert_eq!(manager.normalize_version_string("\r\nv1.2.3\r\n"), "1.2.3");
+        assert_eq!(manager.normalize_version_string("   v   1.2.3   "), "   1.2.3"); // Strips outer whitespace then 'v' prefix
+
+        // Multiple v prefixes (only strips first)
+        assert_eq!(manager.normalize_version_string("vv1.2.3"), "v1.2.3");
+
+        // Empty and edge strings
+        assert_eq!(manager.normalize_version_string(""), "");
+        assert_eq!(manager.normalize_version_string("v"), "");
+        assert_eq!(manager.normalize_version_string("  "), "");
+        assert_eq!(manager.normalize_version_string("  v  "), "");
+    }
+
+    #[test]
+    fn test_configuration_consistency() {
+        // Test that manager configuration is consistently applied
+        let verbose_manager = VersionManager::with_config(false, true);
+        let quiet_manager = VersionManager::with_config(false, false);
+
+        // Both should parse the same version identically despite different verbosity
+        let version1 = verbose_manager.parse_version("1.2.3").unwrap();
+        let version2 = quiet_manager.parse_version("1.2.3").unwrap();
+        
+        assert_eq!(version1.major, version2.major);
+        assert_eq!(version1.minor, version2.minor);
+        assert_eq!(version1.patch, version2.patch);
+        assert_eq!(version1.original, version2.original);
+
+        // Both should produce the same comparison results
+        let v1 = verbose_manager.parse_version("1.0.0").unwrap();
+        let v2 = verbose_manager.parse_version("2.0.0").unwrap();
+        let relation1 = verbose_manager.compare_versions(&v1, &v2).unwrap();
+        
+        let v3 = quiet_manager.parse_version("1.0.0").unwrap();
+        let v4 = quiet_manager.parse_version("2.0.0").unwrap();
+        let relation2 = quiet_manager.compare_versions(&v3, &v4).unwrap();
+        
+        assert_eq!(relation1, relation2);
+    }
+
+    #[test]
+    fn test_utility_functions_comprehensive() {
+        // Test all utility functions with edge cases
+        assert_eq!(utils::compare_version_strings("0.0.1", "0.0.1").unwrap(), VersionRelation::Same);
+        assert_eq!(utils::compare_version_strings("0.0.1", "0.0.2").unwrap(), VersionRelation::Upgrade);
+        assert_eq!(utils::compare_version_strings("0.0.2", "0.0.1").unwrap(), VersionRelation::Downgrade);
+
+        // Test validation with various inputs
+        assert!(utils::is_valid_version("1.2.3"));
+        assert!(utils::is_valid_version("v1.2.3"));
+        assert!(utils::is_valid_version("0.0.0"));
+        assert!(!utils::is_valid_version(""));
+        assert!(!utils::is_valid_version("1.2"));
+        assert!(!utils::is_valid_version("invalid"));
+        assert!(!utils::is_valid_version("1.2.3.4"));
+
+        // Test normalization edge cases
+        assert_eq!(utils::normalize_version("V1.2.3"), "V1.2.3"); // Case sensitive, only 'v' is stripped
+        assert_eq!(utils::normalize_version("version1.2.3"), "ersion1.2.3"); // Only 'v' prefix stripped
+        assert_eq!(utils::normalize_version("1.2.3v"), "1.2.3v"); // Only leading 'v' stripped
+
+        // Pre-release detection
+        let manager_with_pre = VersionManager::with_config(true, false);
+        // Test by directly using manager to check if string would parse as prerelease
+        let version = manager_with_pre.parse_version("1.2.3-alpha").unwrap();
+        assert!(version.is_prerelease());
+        
+        let version = manager_with_pre.parse_version("1.2.3").unwrap();
+        assert!(!version.is_prerelease());
+    }
+
+    #[test]
+    fn test_boundary_conditions() {
+        let manager = VersionManager::with_config(true, false);
+
+        // Test with zero components
+        let zero_major = manager.parse_version("0.1.2").unwrap();
+        let zero_minor = manager.parse_version("1.0.2").unwrap();
+        let zero_patch = manager.parse_version("1.2.0").unwrap();
+        let all_zero = manager.parse_version("0.0.0").unwrap();
+
+        assert_eq!(zero_major.major, 0);
+        assert_eq!(zero_minor.minor, 0);
+        assert_eq!(zero_patch.patch, 0);
+        assert_eq!(all_zero.major, 0);
+
+        // Test increment suggestions with zero components
+        let suggestions = manager.get_increment_suggestions(&all_zero).unwrap();
+        assert_eq!(suggestions[0], manager.parse_version("0.0.1").unwrap()); // patch
+        assert_eq!(suggestions[1], manager.parse_version("0.1.0").unwrap()); // minor
+        assert_eq!(suggestions[2], manager.parse_version("1.0.0").unwrap()); // major
+
+        // Test empty collection handling
+        assert!(manager.find_latest_version(&[]).unwrap().is_none());
+        let empty_filtered = manager.filter_prerelease_versions(vec![]);
+        assert!(empty_filtered.is_empty());
+    }
+
+    #[test]
+    fn test_semver_edge_cases() {
+        let manager = VersionManager::with_config(true, false);
+
+        // Test that our Version struct correctly handles semver edge cases
+        let version = manager.parse_version("1.0.0-0.3.7").unwrap();
+        assert_eq!(version.pre_release, Some("0.3.7".to_string()));
+
+        let version = manager.parse_version("10.2.0-DEV.SNAPSHOT").unwrap();
+        assert_eq!(version.pre_release, Some("DEV.SNAPSHOT".to_string()));
+
+        // Test conversion consistency
+        let original_version = manager.parse_version("1.2.3-alpha.1").unwrap();
+        let semver = manager.to_semver(&original_version).unwrap();
+        let converted_back = VersionManager::from_semver(&semver).unwrap();
+        
+        assert_eq!(original_version.major, converted_back.major);
+        assert_eq!(original_version.minor, converted_back.minor);
+        assert_eq!(original_version.patch, converted_back.patch);
+        assert_eq!(original_version.pre_release, converted_back.pre_release);
+    }
+
+    #[test]
+    fn test_concurrent_safety() {
+        // Test that VersionManager is safe to use in concurrent scenarios
+        // (This is more of a design verification since VersionManager doesn't have mutable state)
+        let manager = VersionManager::with_config(true, false);
+        
+        // Multiple operations should not interfere with each other
+        let v1 = manager.parse_version("1.0.0").unwrap();
+        let v2 = manager.parse_version("2.0.0").unwrap();
+        let v3 = manager.parse_version("1.5.0").unwrap();
+        
+        // These operations should be independent
+        let relation1 = manager.compare_versions(&v1, &v2).unwrap();
+        let relation2 = manager.compare_versions(&v2, &v3).unwrap();
+        let relation3 = manager.compare_versions(&v1, &v3).unwrap();
+        
+        assert_eq!(relation1, VersionRelation::Upgrade);
+        assert_eq!(relation2, VersionRelation::Downgrade);
+        assert_eq!(relation3, VersionRelation::Upgrade);
+        
+        // Manager state should remain consistent
+        assert!(manager.allow_prerelease);
+        assert!(!manager.verbose);
+    }
 }
