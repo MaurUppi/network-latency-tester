@@ -32,13 +32,13 @@ path = "src/main.rs"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "1.47.0", features = ["full"] }
 
 # HTTP client
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"] }
 
 # CLI argument parsing
-clap = { version = "4.0", features = ["derive", "env"] }
+clap = { version = "4.5.45", features = ["derive", "env"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -64,7 +64,7 @@ trust-dns-resolver = "0.23"
 url = "2.5"
 
 # Async trait support
-async-trait = "0.1"
+async-trait = "0.1.88"
 
 # Futures utilities
 futures = "0.3"
@@ -73,14 +73,20 @@ futures = "0.3"
 num_cpus = "1.16"
 
 # UUID generation for correlation IDs
-uuid = { version = "1.0", features = ["v4", "serde"] }
+uuid = { version = "1.18.0", features = ["v4", "serde"] }
+
+# Update feature dependencies
+semver = "1.0"                    # Semantic version comparison
+feed-rs = "2.3.0"                   # Atom feeds XML parsing
+dialoguer = { version = "0.11", optional = true }  # Interactive CLI prompts
+regex = "1.10"                    # Pattern matching for tag extraction
 
 # Testing utilities (dev dependencies) - optimized for faster compilation
 [dev-dependencies]
 # Essential test dependencies only
 tokio-test = "0.4"
-proptest = "1.0"         # Property testing framework
-tempfile = "3.0"
+proptest = "1.7.0"         # Property testing framework
+tempfile = "3.20.0"
 wiremock = "0.6.4"       # Mock HTTP server for integration tests
 assert_cmd = "2.0"       # Only needed for CLI integration tests
 predicates = "3.0"       # Only needed for CLI integration tests

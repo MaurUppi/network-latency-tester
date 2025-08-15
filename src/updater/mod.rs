@@ -31,8 +31,8 @@ pub mod types;
 
 // Sub-modules for specific functionality (to be implemented in subsequent tasks)
 pub mod version;     // Task 6: Version comparison and validation logic  
-// pub mod cache;       // Task 7: Cache management system
-// pub mod feeds;       // Task 8: GitHub Atom feeds client
+pub mod cache;       // Task 7: Cache management system
+pub mod feeds;       // Task 8: GitHub Atom feeds client
 // pub mod github;      // Task 9: GitHub REST API client
 // pub mod data;        // Task 10: Data source management layer
 // pub mod geo;         // Task 11: Geographic detection
@@ -44,6 +44,8 @@ pub use types::{
     VersionRelation, VersionChoice,
 };
 pub use version::VersionManager;
+pub use cache::{CacheManager, CacheStats};
+pub use feeds::{FeedsClient, FeedStats};
 
 /// Update operation results
 #[derive(Debug, Clone)]
