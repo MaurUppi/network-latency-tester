@@ -26,7 +26,7 @@ pub use models::{Config, TimingMetrics, TestResult, Statistics};
 pub use stats::{StatisticsEngine, StatisticalAnalysis, ExtendedStatistics, OptimizedStatisticsCalculator, RollingStats};
 pub use diagnostics::{NetworkDiagnostics, DiagnosticReport, SystemHealth};
 pub use output::{OutputFormatter, ColoredFormatter, PlainFormatter, OutputCoordinator, OutputFormatterFactory, VerboseTimingFormatter};
-pub use updater::{UpdateCoordinator, UpdateArgs, UpdateResult, UpdateMode, Version, Release, GeographicRegion, VersionManager, CacheManager, CacheStats, FeedsClient, FeedStats, GitHubApiClient, GitHubApiStats, ApiAvailability, RateLimitInfo};
+pub use updater::{UpdateCoordinator, UpdateArgs, UpdateResult, UpdateMode, Version, Release, GeographicRegion, VersionManager, CacheManager, CacheStats, FeedsClient, FeedStats, GitHubApiClient, GitHubApiStats, ApiAvailability, RateLimitInfo, PlatformInfo};
 
 /// Application version information
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

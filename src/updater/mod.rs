@@ -41,7 +41,7 @@ pub mod github;      // Task 9: GitHub REST API client
 // Re-export commonly used types for convenience
 pub use types::{
     Release, ReleaseAsset, Version, UpdateArgs, GeographicRegion,
-    VersionRelation, VersionChoice,
+    VersionRelation, VersionChoice, PlatformInfo,
 };
 pub use version::VersionManager;
 pub use cache::{CacheManager, CacheStats};

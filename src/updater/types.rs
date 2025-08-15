@@ -271,6 +271,108 @@ pub enum VersionChoice {
     Cancel,
 }
 
+/// Platform information for automatic OS/architecture detection
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlatformInfo {
+    /// Operating system (e.g., "macos", "linux", "windows")
+    pub os: String,
+    /// Architecture (e.g., "x86_64", "aarch64", "arm64")
+    pub arch: String,
+    /// Target triple (e.g., "x86_64-apple-darwin")
+    pub target_triple: String,
+}
+
+impl PlatformInfo {
+    /// Create PlatformInfo for the current system
+    pub fn current() -> Self {
+        let os = match std::env::consts::OS {
+            "macos" => "macos",
+            "linux" => "linux", 
+            "windows" => "windows",
+            other => other,
+        }.to_string();
+        
+        let arch = std::env::consts::ARCH.to_string();
+        
+        // Create more specific target triple
+        let target_triple = match std::env::consts::OS {
+            "macos" => match std::env::consts::ARCH {
+                "x86_64" => "x86_64-apple-darwin".to_string(),
+                "aarch64" => "aarch64-apple-darwin".to_string(),
+                _ => format!("{}-apple-darwin", std::env::consts::ARCH),
+            },
+            "linux" => match std::env::consts::ARCH {
+                "x86_64" => "x86_64-unknown-linux-gnu".to_string(),
+                "aarch64" => "aarch64-unknown-linux-gnu".to_string(),
+                _ => format!("{}-unknown-linux-gnu", std::env::consts::ARCH),
+            },
+            "windows" => match std::env::consts::ARCH {
+                "x86_64" => "x86_64-pc-windows-msvc".to_string(),
+                "aarch64" => "aarch64-pc-windows-msvc".to_string(),
+                _ => format!("{}-pc-windows-msvc", std::env::consts::ARCH),
+            },
+            _ => format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS),
+        };
+        
+        Self {
+            os,
+            arch,
+            target_triple,
+        }
+    }
+    
+    /// Check if an asset name matches this platform
+    pub fn matches_asset_name(&self, asset_name: &str) -> bool {
+        let asset_lower = asset_name.to_lowercase();
+        
+        // Check architecture match
+        let arch_match = asset_lower.contains(&self.arch) ||
+            (self.arch == "aarch64" && asset_lower.contains("arm64"));
+        
+        // Check OS match
+        let os_match = match self.os.as_str() {
+            "macos" => asset_lower.contains("darwin") || asset_lower.contains("macos"),
+            "linux" => asset_lower.contains("linux"),
+            "windows" => asset_lower.contains("windows") || asset_lower.contains("win"),
+            _ => asset_lower.contains(&self.os),
+        };
+        
+        arch_match && os_match
+    }
+    
+    /// Get preferred file extension for this platform
+    pub fn preferred_extension(&self) -> &'static str {
+        match self.os.as_str() {
+            "windows" => ".zip",
+            _ => ".tar.gz",
+        }
+    }
+    
+    /// Format platform information for display
+    pub fn display_name(&self) -> String {
+        format!("{} {}", 
+            match self.os.as_str() {
+                "macos" => "macOS",
+                "linux" => "Linux", 
+                "windows" => "Windows",
+                other => other,
+            },
+            match self.arch.as_str() {
+                "x86_64" => "x64",
+                "aarch64" => "ARM64",
+                "arm64" => "ARM64",
+                other => other,
+            }
+        )
+    }
+}
+
+impl Default for PlatformInfo {
+    fn default() -> Self {
+        Self::current()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -283,6 +385,75 @@ mod tests {
         assert_eq!(version.patch, 3);
         assert_eq!(version.pre_release, None);
         assert_eq!(version.original, "v1.2.3");
+    }
+
+    #[test]
+    fn test_platform_info_creation() {
+        let platform = PlatformInfo::current();
+        assert!(!platform.os.is_empty());
+        assert!(!platform.arch.is_empty());
+        assert!(!platform.target_triple.is_empty());
+    }
+
+    #[test]
+    fn test_platform_asset_matching() {
+        let platform = PlatformInfo {
+            os: "macos".to_string(),
+            arch: "x86_64".to_string(),
+            target_triple: "x86_64-apple-darwin".to_string(),
+        };
+        
+        assert!(platform.matches_asset_name("nlt-v0.1.10-x86_64-apple-darwin.tar.gz"));
+        assert!(platform.matches_asset_name("binary-x86_64-darwin-release.tar.gz"));
+        assert!(!platform.matches_asset_name("nlt-v0.1.10-aarch64-unknown-linux-gnu.tar.gz"));
+        assert!(!platform.matches_asset_name("nlt-v0.1.10-x86_64-pc-windows-msvc.zip"));
+    }
+
+    #[test]
+    fn test_platform_preferred_extension() {
+        let unix_platform = PlatformInfo {
+            os: "linux".to_string(),
+            arch: "x86_64".to_string(),
+            target_triple: "x86_64-unknown-linux-gnu".to_string(),
+        };
+        assert_eq!(unix_platform.preferred_extension(), ".tar.gz");
+        
+        let windows_platform = PlatformInfo {
+            os: "windows".to_string(),
+            arch: "x86_64".to_string(),
+            target_triple: "x86_64-pc-windows-msvc".to_string(),
+        };
+        assert_eq!(windows_platform.preferred_extension(), ".zip");
+    }
+
+    #[test]
+    fn test_platform_display_name() {
+        let platform = PlatformInfo {
+            os: "macos".to_string(),
+            arch: "aarch64".to_string(),
+            target_triple: "aarch64-apple-darwin".to_string(),
+        };
+        assert_eq!(platform.display_name(), "macOS ARM64");
+        
+        let platform = PlatformInfo {
+            os: "linux".to_string(),
+            arch: "x86_64".to_string(),
+            target_triple: "x86_64-unknown-linux-gnu".to_string(),
+        };
+        assert_eq!(platform.display_name(), "Linux x64");
+    }
+
+    #[test]
+    fn test_platform_arm64_matching() {
+        let platform = PlatformInfo {
+            os: "macos".to_string(),
+            arch: "aarch64".to_string(),
+            target_triple: "aarch64-apple-darwin".to_string(),
+        };
+        
+        // Should match both aarch64 and arm64 asset names
+        assert!(platform.matches_asset_name("nlt-v0.1.10-aarch64-apple-darwin.tar.gz"));
+        assert!(platform.matches_asset_name("nlt-v0.1.10-arm64-darwin.tar.gz"));
     }
 
     #[test]
