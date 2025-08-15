@@ -35,8 +35,8 @@ pub mod cache;       // Task 7: Cache management system
 pub mod feeds;       // Task 8: GitHub Atom feeds client
 pub mod github;      // Task 9: GitHub REST API client
 pub mod data;        // Task 10: Data source management layer
-// pub mod geo;         // Task 11: Geographic detection
-// pub mod interactive; // Task 12: Interactive user interface
+pub mod geo;         // Task 11: Geographic detection
+pub mod interactive; // Task 12: Interactive user interface
 
 // Re-export commonly used types for convenience
 pub use types::{
@@ -48,6 +48,8 @@ pub use cache::{CacheManager, CacheStats};
 pub use feeds::{FeedsClient, FeedStats};
 pub use github::{GitHubApiClient, GitHubApiStats, ApiAvailability, RateLimitInfo};
 pub use data::{DataSourceManager, DataSourceStats, DataSourceStatus, DataSourcePriority};
+pub use geo::GeographicDetector;
+pub use interactive::InteractiveUI;
 
 /// Update operation results
 #[derive(Debug, Clone)]
