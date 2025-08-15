@@ -196,7 +196,7 @@ mod config_priority_tests {
         env::set_var("TEST_COUNT", "25");
         
         // Create CLI with override (should override both)
-        let cli = Cli::parse_from(&["test", "--count", "35"]);
+        let cli = Cli::parse_from(["test", "--count", "35"]);
         let parser = ConfigParser::new(cli);
         let config = parser.parse().unwrap();
         

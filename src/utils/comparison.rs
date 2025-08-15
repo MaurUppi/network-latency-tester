@@ -94,7 +94,7 @@ mod tests {
 
     #[test]
     fn test_min_response_time_comparator() {
-        let data = vec![3.0, 1.0, 2.0];
+        let data = [3.0, 1.0, 2.0];
         let extractor = |x: &f64| *x;
         let comparator = min_response_time_comparator(extractor);
         
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn test_max_response_time_comparator() {
-        let data = vec![3.0, 1.0, 2.0];
+        let data = [3.0, 1.0, 2.0];
         let extractor = |x: &f64| *x;
         let comparator = max_response_time_comparator(extractor);
         

@@ -222,6 +222,10 @@ impl UserMessageProvider {
             AppError::Auth(_) => self.generate_auth_error_message(error),
             AppError::TestExecution(_) => self.generate_test_execution_error_message(error),
             AppError::Statistics(_) => self.generate_statistics_error_message(error),
+            AppError::Update(_) => self.generate_update_error_message(error),
+            AppError::Version(_) => self.generate_version_error_message(error),
+            AppError::Geographic(_) => self.generate_geographic_error_message(error),
+            AppError::Cache(_) => self.generate_cache_error_message(error),
             AppError::Internal(_) => self.generate_internal_error_message(error),
         }
     }
@@ -1091,6 +1095,166 @@ impl UserMessageProvider {
             ],
         }
     }
+    
+    /// Generate update error message
+    fn generate_update_error_message(&self, _error: &AppError) -> EnhancedErrorMessage {
+        EnhancedErrorMessage {
+            message: "Update Operation Failed".to_string(),
+            description: "Unable to complete the update operation. This could be due to network connectivity issues, version availability, or permission problems.".to_string(),
+            immediate_actions: vec![
+                "Check your network connection".to_string(),
+                "Verify the version exists".to_string(),
+                "Try again in a few minutes".to_string(),
+            ],
+            troubleshooting_steps: vec![
+                TroubleshootingStep {
+                    number: 1,
+                    description: "Verify network connectivity".to_string(),
+                    actions: self.get_network_test_commands(),
+                    expected_outcome: "Network commands should work without errors".to_string(),
+                    failure_next_step: Some(2),
+                },
+                TroubleshootingStep {
+                    number: 2,
+                    description: "Check GitHub accessibility".to_string(),
+                    actions: vec![
+                        "curl -I https://github.com/MaurUppi/network-latency-tester".to_string(),
+                        "Try accessing the repository in a web browser".to_string(),
+                    ],
+                    expected_outcome: "Should receive HTTP 200 response".to_string(),
+                    failure_next_step: None,
+                },
+            ],
+            help_topics: vec![
+                "Network connectivity".to_string(),
+                "Update troubleshooting".to_string(),
+            ],
+            platform_notes: self.get_network_platform_notes(),
+            examples: vec![
+                "nlt --update --version v0.1.8".to_string(),
+                "nlt -u -v 0.1.7 --force".to_string(),
+            ],
+            is_common: false,
+            resolution_time: ResolutionTime::Moderate,
+        }
+    }
+
+    /// Generate version error message
+    fn generate_version_error_message(&self, _error: &AppError) -> EnhancedErrorMessage {
+        EnhancedErrorMessage {
+            message: "Version Format Error".to_string(),
+            description: "The version string provided is not in a valid format or the specified version could not be processed.".to_string(),
+            immediate_actions: vec![
+                "Check the version format (e.g., '1.2.3' or 'v1.2.3')".to_string(),
+                "Use --force for downgrades".to_string(),
+                "List available versions with --update".to_string(),
+            ],
+            troubleshooting_steps: vec![
+                TroubleshootingStep {
+                    number: 1,
+                    description: "Verify version format".to_string(),
+                    actions: vec![
+                        "Use semantic versioning format: major.minor.patch".to_string(),
+                        "Examples: 1.2.3, v1.2.3, 0.1.8".to_string(),
+                    ],
+                    expected_outcome: "Version should follow semantic versioning rules".to_string(),
+                    failure_next_step: Some(2),
+                },
+                TroubleshootingStep {
+                    number: 2,
+                    description: "Check version availability".to_string(),
+                    actions: vec![
+                        "nlt --update".to_string(),
+                        "Visit: https://github.com/MaurUppi/network-latency-tester/releases".to_string(),
+                    ],
+                    expected_outcome: "Should show available versions".to_string(),
+                    failure_next_step: None,
+                },
+            ],
+            help_topics: vec![
+                "Version management".to_string(),
+                "Semantic versioning".to_string(),
+            ],
+            platform_notes: vec![],
+            examples: vec![
+                "Valid: nlt --update --version 1.2.3".to_string(),
+                "Valid: nlt --update --version v1.2.3".to_string(),
+                "Downgrade: nlt --update --version 0.1.7 --force".to_string(),
+            ],
+            is_common: true,
+            resolution_time: ResolutionTime::Quick,
+        }
+    }
+
+    /// Generate geographic detection error message
+    fn generate_geographic_error_message(&self, _error: &AppError) -> EnhancedErrorMessage {
+        EnhancedErrorMessage {
+            message: "Geographic Detection Failed".to_string(),
+            description: "Unable to detect your geographic location for download optimization. The update process will continue using global download URLs.".to_string(),
+            immediate_actions: vec![
+                "This won't prevent updates - using global URLs".to_string(),
+                "Check if IP detection service is accessible".to_string(),
+                "Continue with the update operation".to_string(),
+            ],
+            troubleshooting_steps: vec![
+                TroubleshootingStep {
+                    number: 1,
+                    description: "Test IP detection service".to_string(),
+                    actions: vec![
+                        "curl http://myip.ipip.net".to_string(),
+                        "Try accessing the service in a browser".to_string(),
+                    ],
+                    expected_outcome: "Should return your IP address and location".to_string(),
+                    failure_next_step: None,
+                },
+            ],
+            help_topics: vec![
+                "Download optimization".to_string(),
+                "Network troubleshooting".to_string(),
+            ],
+            platform_notes: vec![],
+            examples: vec![],
+            is_common: false,
+            resolution_time: ResolutionTime::Quick,
+        }
+    }
+
+    /// Generate cache error message
+    fn generate_cache_error_message(&self, _error: &AppError) -> EnhancedErrorMessage {
+        EnhancedErrorMessage {
+            message: "Cache Operation Failed".to_string(),
+            description: "Unable to read from or write to the local cache. The cache will be rebuilt automatically, which may result in slower initial requests.".to_string(),
+            immediate_actions: vec![
+                "The cache will be rebuilt automatically".to_string(),
+                "Initial requests may be slower".to_string(),
+                "Check disk space and permissions".to_string(),
+            ],
+            troubleshooting_steps: vec![
+                TroubleshootingStep {
+                    number: 1,
+                    description: "Check cache directory permissions".to_string(),
+                    actions: self.get_file_check_commands(),
+                    expected_outcome: "Cache directory should be writable".to_string(),
+                    failure_next_step: Some(2),
+                },
+                TroubleshootingStep {
+                    number: 2,
+                    description: "Verify disk space availability".to_string(),
+                    actions: self.get_disk_space_commands(),
+                    expected_outcome: "Should have sufficient disk space".to_string(),
+                    failure_next_step: None,
+                },
+            ],
+            help_topics: vec![
+                "Cache management".to_string(),
+                "File permissions".to_string(),
+            ],
+            platform_notes: self.get_file_platform_notes(),
+            examples: vec![],
+            is_common: false,
+            resolution_time: ResolutionTime::Quick,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -1187,6 +1351,10 @@ mod tests {
             AppError::auth("test"),
             AppError::test_execution("test"),
             AppError::statistics("test"),
+            AppError::update("test"),
+            AppError::version("test"),
+            AppError::geographic("test"),
+            AppError::cache("test"),
             AppError::internal("test"),
         ];
         

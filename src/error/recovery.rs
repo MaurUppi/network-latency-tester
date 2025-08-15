@@ -7,6 +7,8 @@
 //! - Adaptive timeout adjustment
 //! - Circuit breaker pattern for repeated failures
 
+#![allow(dead_code)]
+
 use super::AppError;
 use crate::logging::{ErrorEventLogger, Logger};
 use crate::models::Config;

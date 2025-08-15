@@ -33,7 +33,7 @@ pub mod types;
 pub mod version;     // Task 6: Version comparison and validation logic  
 pub mod cache;       // Task 7: Cache management system
 pub mod feeds;       // Task 8: GitHub Atom feeds client
-// pub mod github;      // Task 9: GitHub REST API client
+pub mod github;      // Task 9: GitHub REST API client
 // pub mod data;        // Task 10: Data source management layer
 // pub mod geo;         // Task 11: Geographic detection
 // pub mod interactive; // Task 12: Interactive user interface
@@ -46,6 +46,7 @@ pub use types::{
 pub use version::VersionManager;
 pub use cache::{CacheManager, CacheStats};
 pub use feeds::{FeedsClient, FeedStats};
+pub use github::{GitHubApiClient, GitHubApiStats, ApiAvailability, RateLimitInfo};
 
 /// Update operation results
 #[derive(Debug, Clone)]
