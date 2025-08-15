@@ -143,7 +143,7 @@ impl Cli {
         if let Some(topic) = &self.help_topic {
             help_system.display_topic_help(topic, use_colors)
                 .unwrap_or_else(|| {
-                    format!("Unknown help topic: '{}'\n\nAvailable topics: config, dns, examples, timeout, output\n\n{}", 
+                    format!("Unknown help topic: '{}'\n\nAvailable topics: config, dns, examples, timeout, output, update\n\n{}", 
                         topic, help_system.display_main_help(use_colors))
                 })
         } else {
@@ -430,7 +430,7 @@ mod tests {
     #[test]
     fn test_help_topic_edge_cases() {
         // Test all valid help topics
-        for topic in &["config", "dns", "examples", "timeout", "output"] {
+        for topic in &["config", "dns", "examples", "timeout", "output", "update"] {
             let cli = Cli::parse_from(&["test", "--help-topic", topic]);
             assert!(cli.should_show_topic_help());
             assert_eq!(cli.get_help_topic(), Some(*topic));

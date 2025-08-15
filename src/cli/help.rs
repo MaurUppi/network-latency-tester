@@ -65,6 +65,7 @@ impl HelpSystem {
             "examples" => Some(self.format_examples_section(use_colors)),
             "timeout" | "timeouts" => Some(self.format_timeout_help(use_colors)),
             "output" | "formatting" => Some(self.format_output_help(use_colors)),
+            "update" | "updates" => Some(self.format_update_help(use_colors)),
             _ => None,
         }
     }
@@ -103,6 +104,7 @@ impl HelpSystem {
             "network-latency-tester [OPTIONS]",
             "network-latency-tester --url <URL> [OPTIONS]", 
             "network-latency-tester --test-original [OPTIONS]",
+            "network-latency-tester --update [--version <VERSION>] [--force]",
             "network-latency-tester --help [TOPIC]",
         ];
 
@@ -191,6 +193,27 @@ impl HelpSystem {
                 example: Some("--no-color"),
             },
             OptionHelp {
+                short: Some("u"),
+                long: "update",
+                value: "",
+                description: "Check for updates and manage versions",
+                example: Some("--update"),
+            },
+            OptionHelp {
+                short: Some("v"),
+                long: "version",
+                value: "<VERSION>",
+                description: "Target version for update/downgrade (requires --update)",
+                example: Some("--update --version v0.1.7"),
+            },
+            OptionHelp {
+                short: Some("f"),
+                long: "force",
+                value: "",
+                description: "Force version change, including downgrades (requires --update)",
+                example: Some("--update --version 0.1.5 --force"),
+            },
+            OptionHelp {
                 short: Some("h"),
                 long: "help",
                 value: "[TOPIC]",
@@ -246,6 +269,26 @@ impl HelpSystem {
                 title: "Debug mode with no colors",
                 command: "network-latency-tester --url https://example.com --debug --no-color",
                 description: "Run with debug output and no color formatting",
+            },
+            ExampleHelp {
+                title: "Check for updates",
+                command: "network-latency-tester --update",
+                description: "Check for available updates interactively",
+            },
+            ExampleHelp {
+                title: "Update to specific version",
+                command: "network-latency-tester --update --version v0.1.8",
+                description: "Update to a specific version",
+            },
+            ExampleHelp {
+                title: "Force downgrade to older version",
+                command: "network-latency-tester --update --version 0.1.5 --force",
+                description: "Force downgrade to an older version with warnings",
+            },
+            ExampleHelp {
+                title: "Update with verbose output",
+                command: "network-latency-tester --update --version v1.0.0 --verbose",
+                description: "Update with detailed progress information",
             },
         ];
 
@@ -350,6 +393,7 @@ impl HelpSystem {
             ("--help examples", "More detailed usage examples"),
             ("--help timeout", "Timeout configuration and optimization"),
             ("--help output", "Output formatting and interpretation"),
+            ("--help update", "Version management and update system"),
         ];
 
         for (command, description) in help_topics {
@@ -591,6 +635,184 @@ impl HelpSystem {
 
         help
     }
+
+    /// Format comprehensive update system help
+    fn format_update_help(&self, use_colors: bool) -> String {
+        let header = if use_colors {
+            "UPDATE SYSTEM REFERENCE:".bright_green().bold().to_string()
+        } else {
+            "UPDATE SYSTEM REFERENCE:".to_string()
+        };
+
+        let mut help = format!("{}\n\n", header);
+        
+        help.push_str("OVERVIEW:\n");
+        help.push_str("The update system allows you to manage application versions, check for updates,\n");
+        help.push_str("upgrade to newer versions, or downgrade to older versions with proper safeguards.\n\n");
+
+        help.push_str("UPDATE MODES:\n");
+        help.push_str("1. Interactive Update Check: --update\n");
+        help.push_str("   - Lists available versions for selection\n");
+        help.push_str("   - Shows current version and update recommendations\n");
+        help.push_str("   - Allows interactive version selection\n\n");
+        
+        help.push_str("2. Direct Version Update: --update --version <VERSION>\n");
+        help.push_str("   - Updates directly to specified version\n");
+        help.push_str("   - Validates version format and availability\n");
+        help.push_str("   - Prevents accidental downgrades without --force\n\n");
+        
+        help.push_str("3. Force Version Change: --update --version <VERSION> --force\n");
+        help.push_str("   - Allows downgrades to older versions\n");
+        help.push_str("   - Shows security and compatibility warnings\n");
+        help.push_str("   - Bypasses downgrade protection\n\n");
+
+        help.push_str("VERSION FORMATS:\n");
+        help.push_str("Supported version formats (case-insensitive):\n");
+        help.push_str("- Semantic versions: 1.2.3, v1.2.3\n");
+        help.push_str("- Pre-release versions: 1.2.3-alpha, v1.2.3-beta.1\n");
+        help.push_str("- Release candidates: 1.2.3-rc.1, v2.0.0-rc.2\n\n");
+
+        help.push_str("Examples:\n");
+        help.push_str("- 0.1.9, v0.1.9 (stable release)\n");
+        help.push_str("- 1.0.0-alpha, v1.0.0-alpha (alpha version)\n");
+        help.push_str("- 2.1.0-beta.1, v2.1.0-beta.1 (beta version)\n");
+        help.push_str("- 1.5.0-rc.1, v1.5.0-rc.1 (release candidate)\n\n");
+
+        help.push_str("UPDATE SOURCES:\n");
+        help.push_str("The updater uses multiple data sources with intelligent fallback:\n");
+        help.push_str("1. Local Cache (fastest) - Previously fetched release data\n");
+        help.push_str("2. GitHub Atom Feeds (reliable) - No rate limits, XML format\n");
+        help.push_str("3. GitHub REST API (comprehensive) - Full metadata, rate limited\n\n");
+
+        help.push_str(&format!("PLATFORM DETECTION ({}):\n", self.platform));
+        help.push_str("The updater automatically detects your platform and downloads\n");
+        help.push_str("the appropriate binary for your operating system and architecture.\n\n");
+        
+        match self.platform.as_str() {
+            "Windows" => {
+                help.push_str("Windows Platform Features:\n");
+                help.push_str("- Automatic .zip archive extraction\n");
+                help.push_str("- Windows certificate validation\n");
+                help.push_str("- Firewall-friendly download acceleration\n");
+            }
+            "macOS" => {
+                help.push_str("macOS Platform Features:\n");
+                help.push_str("- Universal binary support (Intel/Apple Silicon)\n");
+                help.push_str("- Automatic .tar.gz archive extraction\n");
+                help.push_str("- Gatekeeper compatibility\n");
+            }
+            "Linux" => {
+                help.push_str("Linux Platform Features:\n");
+                help.push_str("- Distribution-agnostic binaries\n");
+                help.push_str("- Automatic .tar.gz archive extraction\n");
+                help.push_str("- High-performance concurrent downloads\n");
+            }
+            _ => {
+                help.push_str("Platform-specific optimizations available for detected platform.\n");
+            }
+        }
+        help.push('\n');
+
+        help.push_str("SAFETY FEATURES:\n");
+        help.push_str("- Version validation before download\n");
+        help.push_str("- Downgrade protection (requires --force)\n");
+        help.push_str("- Pre-release version warnings\n");
+        help.push_str("- Backup of current version (where supported)\n");
+        help.push_str("- Rollback capability on update failure\n");
+        help.push_str("- Network connectivity validation\n\n");
+
+        help.push_str("GEOGRAPHIC OPTIMIZATION:\n");
+        help.push_str("The updater includes geographic detection for download acceleration:\n");
+        help.push_str("- China mainland: Uses accelerated download mirrors\n");
+        help.push_str("- Global regions: Direct GitHub downloads\n");
+        help.push_str("- Automatic failover between sources\n\n");
+
+        help.push_str("COMMON UPDATE WORKFLOWS:\n\n");
+        
+        help.push_str("Check for Updates:\n");
+        if use_colors {
+            help.push_str(&format!("  {}\n", "network-latency-tester --update".bright_blue()));
+        } else {
+            help.push_str("  network-latency-tester --update\n");
+        }
+        help.push_str("  - Lists available versions interactively\n");
+        help.push_str("  - Shows current version and recommendations\n\n");
+        
+        help.push_str("Update to Latest:\n");
+        if use_colors {
+            help.push_str(&format!("  {}\n", "network-latency-tester --update --version latest".bright_blue()));
+        } else {
+            help.push_str("  network-latency-tester --update --version latest\n");
+        }
+        help.push_str("  - Updates to the most recent stable version\n\n");
+        
+        help.push_str("Update to Specific Version:\n");
+        if use_colors {
+            help.push_str(&format!("  {}\n", "network-latency-tester --update --version v0.1.8".bright_blue()));
+        } else {
+            help.push_str("  network-latency-tester --update --version v0.1.8\n");
+        }
+        help.push_str("  - Updates to the specified version\n");
+        help.push_str("  - Validates version exists and is compatible\n\n");
+        
+        help.push_str("Force Downgrade:\n");
+        if use_colors {
+            help.push_str(&format!("  {}\n", "network-latency-tester --update --version 0.1.5 --force".bright_blue()));
+        } else {
+            help.push_str("  network-latency-tester --update --version 0.1.5 --force\n");
+        }
+        help.push_str("  - Downgrades to older version with warnings\n");
+        help.push_str("  - Shows compatibility and security implications\n\n");
+        
+        help.push_str("Verbose Update:\n");
+        if use_colors {
+            help.push_str(&format!("  {}\n", "network-latency-tester --update --verbose".bright_blue()));
+        } else {
+            help.push_str("  network-latency-tester --update --verbose\n");
+        }
+        help.push_str("  - Shows detailed progress and diagnostic information\n");
+        help.push_str("  - Useful for troubleshooting update issues\n\n");
+
+        help.push_str("ERROR HANDLING:\n");
+        help.push_str("Common update errors and solutions:\n\n");
+        
+        help.push_str("Network Connectivity Issues:\n");
+        help.push_str("- Check internet connection\n");
+        help.push_str("- Verify firewall/proxy settings\n");
+        help.push_str("- Try --verbose for detailed network diagnostics\n\n");
+        
+        help.push_str("Version Not Found:\n");
+        help.push_str("- Check version format (e.g., v1.2.3 or 1.2.3)\n");
+        help.push_str("- Use --update without --version to see available versions\n");
+        help.push_str("- Verify the version has been released\n\n");
+        
+        help.push_str("Permission Errors:\n");
+        help.push_str("- Ensure write permissions to installation directory\n");
+        help.push_str("- On Unix systems, may require sudo for system-wide installs\n");
+        help.push_str("- Consider user-specific installation locations\n\n");
+        
+        help.push_str("Rate Limiting:\n");
+        help.push_str("- GitHub API has rate limits for unauthenticated requests\n");
+        help.push_str("- Atom feeds are used as primary source to avoid limits\n");
+        help.push_str("- Local cache reduces external requests\n\n");
+
+        help.push_str("CONFIGURATION:\n");
+        help.push_str("Update system behavior can be configured through:\n");
+        help.push_str("- Command-line flags (--verbose, --force, etc.)\n");
+        help.push_str("- Environment variables for proxy/network settings\n");
+        help.push_str("- Automatic platform detection and optimization\n\n");
+
+        help.push_str("SECURITY CONSIDERATIONS:\n");
+        help.push_str("- All downloads use HTTPS with certificate validation\n");
+        help.push_str("- Release authenticity verified through GitHub\n");
+        help.push_str("- Downgrade warnings highlight potential security risks\n");
+        help.push_str("- Pre-release versions clearly marked with warnings\n\n");
+
+        help.push_str("For more information about version management and update strategies,\n");
+        help.push_str("visit the project documentation or GitHub repository.\n");
+
+        help
+    }
 }
 
 impl Default for HelpSystem {
@@ -717,6 +939,8 @@ mod tests {
         assert!(help_system.display_topic_help("dns", false).is_some());
         assert!(help_system.display_topic_help("examples", true).is_some());
         assert!(help_system.display_topic_help("timeout", false).is_some());
+        assert!(help_system.display_topic_help("update", true).is_some());
+        assert!(help_system.display_topic_help("updates", false).is_some()); // Test alias
         
         // Invalid topic
         assert!(help_system.display_topic_help("invalid", true).is_none());
@@ -780,6 +1004,40 @@ mod tests {
         assert!(output_help.contains("OUTPUT MODES"));
         assert!(output_help.contains("PERFORMANCE INDICATORS"));
         assert!(output_help.contains("STATISTICS REPORTED"));
+    }
+
+    #[test]
+    fn test_update_help() {
+        let help_system = HelpSystem::new();
+        
+        let update_help = help_system.format_update_help(false);
+        
+        assert!(update_help.contains("UPDATE SYSTEM REFERENCE"));
+        assert!(update_help.contains("UPDATE MODES"));
+        assert!(update_help.contains("VERSION FORMATS"));
+        assert!(update_help.contains("UPDATE SOURCES"));
+        assert!(update_help.contains("PLATFORM DETECTION"));
+        assert!(update_help.contains("SAFETY FEATURES"));
+        assert!(update_help.contains("COMMON UPDATE WORKFLOWS"));
+        assert!(update_help.contains("ERROR HANDLING"));
+        assert!(update_help.contains("SECURITY CONSIDERATIONS"));
+        
+        // Test that it contains platform-specific information
+        assert!(update_help.contains(&help_system.platform));
+        
+        // Test version format examples
+        assert!(update_help.contains("v1.2.3"));
+        assert!(update_help.contains("1.2.3-alpha"));
+        assert!(update_help.contains("0.1.9"));
+        
+        // Test update command examples
+        assert!(update_help.contains("--update"));
+        assert!(update_help.contains("--version"));
+        assert!(update_help.contains("--force"));
+        
+        // Test colored vs plain formatting
+        let colored_help = help_system.format_update_help(true);
+        assert!(colored_help.len() >= update_help.len());
     }
 
     #[test]

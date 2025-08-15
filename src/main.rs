@@ -50,6 +50,12 @@ async fn main() {
 
 /// Main application logic
 async fn run_application(cli: Cli) -> Result<()> {
+    // Handle help topics first, before any validation
+    if cli.should_show_topic_help() {
+        println!("{}", cli.display_help());
+        return Ok(());
+    }
+
     // Early validation of CLI arguments
     cli.validate().map_err(AppError::validation)?;
 

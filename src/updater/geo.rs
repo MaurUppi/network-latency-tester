@@ -867,6 +867,31 @@ mod tests {
     }
 
     #[test]
+    fn test_real_myip_ipip_net_response_format() {
+        let detector = GeographicDetector::new().unwrap();
+        
+        // Test the exact response format from user's curl command
+        let real_response = "当前 IP：113.74.8.52  来自于：中国 广东 珠海  电信";
+        let result = detector.parse_location(real_response);
+        assert_eq!(result, GeographicRegion::ChinaMainland, 
+                  "Real myip.ipip.net response should be parsed as China mainland");
+        
+        // Test other similar real formats
+        let guangzhou_response = "当前 IP：14.215.177.38  来自于：中国 广东 广州  联通";
+        assert_eq!(detector.parse_location(guangzhou_response), GeographicRegion::ChinaMainland);
+        
+        let beijing_response = "当前 IP：220.181.57.217  来自于：中国 北京  电信";
+        assert_eq!(detector.parse_location(beijing_response), GeographicRegion::ChinaMainland);
+        
+        let shanghai_response = "当前 IP：101.95.46.178  来自于：中国 上海  移动";
+        assert_eq!(detector.parse_location(shanghai_response), GeographicRegion::ChinaMainland);
+        
+        // Test non-China response for comparison
+        let us_response = "当前 IP：8.8.8.8  来自于：美国 加利福尼亚州 山景城  谷歌公司";
+        assert_eq!(detector.parse_location(us_response), GeographicRegion::Global);
+    }
+
+    #[test]
     fn test_fallback_acceleration_logic() {
         let detector = GeographicDetector::new().unwrap();
         
